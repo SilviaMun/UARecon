@@ -1,5 +1,5 @@
-from opcua import Client
-from .banner import info, good, bad, warn
+from asyncua.sync import Client
+from .banner import critical, info, good, bad, warn, tag
 from .helpers import (
     uniq,
     classify_error,
@@ -12,13 +12,21 @@ from .helpers import (
 def normalize_policy(policy_uri):
     try:
         if "#" in policy_uri:
-            return policy_uri.split("#")[-1]
-        return str(policy_uri)
+            name = policy_uri.split("#")[-1]
+        else:
+            name = str(policy_uri)
+        return name.replace("_", "")
     except Exception:
         return str(policy_uri)
 
 
 def normalize_mode(mode):
+    if hasattr(mode, "name"):
+        name = mode.name
+        if name == "None_":
+            return "None"
+        return name
+
     s = str(mode)
     if "SignAndEncrypt" in s:
         return "SignAndEncrypt"
@@ -45,7 +53,7 @@ def get_endpoint_combinations(target, timeout=5):
     return uniq(combos)
 
 
-def try_connect(target, user, pwd, cert=None, key=None, uri="urn:OpcPEAS",
+def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
                 policy="Basic256Sha256", mode="Sign", timeout=5):
     findings = []
 
@@ -56,6 +64,7 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:OpcPEAS",
         c.set_password(pwd)
         return c
 
+    # Strategy 1: provided cert
     if cert and key:
         client = build_client()
         info(f"Using provided certificate: {cert}")
@@ -68,23 +77,37 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:OpcPEAS",
             warn(f"Provided cert failed: {classify_error(e)}")
             safe_disconnect(client)
 
+    # Strategy 2: no security
     info("Trying connection without security policy...")
     client = Client(target, timeout=timeout)
     client.set_user(user)
     client.set_password(pwd)
     try:
         client.connect()
-        bad("CONNECTED WITHOUT SECURITY POLICY (SecurityPolicy None)")
+        critical("CONNECTED WITHOUT SECURITY POLICY (SecurityPolicy None)")
+        tag("Cryptographic Failures")
         findings.append({
             "title": "SecurityPolicy None Accepted",
-            "severity": "High",
-            "description": "Server accepts connections without any security policy."
+            "severity": "Critical",
+            "category": "Cryptographic Failures",
+            "description": "Server accepts connections without any security policy. All traffic is unencrypted and unauthenticated.",
+            "check": "security-policies",
+            "confidence": "high",
+            "verification_status": "confirmed-connect",
+            "safe_check": True,
+            "destructive": False,
+            "observation": False,
+            "evidence": {
+                "policy": "None",
+                "mode": "None",
+            },
         })
         return client, findings
     except Exception as e:
         good(f"SecurityPolicy None rejected ({classify_error(e)})")
         safe_disconnect(client)
 
+    # Strategy 3: auto-generated self-signed cert
     info("Auto-generating self-signed certificate...")
     auto_cert, auto_key, cnf_path, out_dir, created_tmp = generate_self_signed_cert(uri)
     if not auto_cert:
@@ -98,7 +121,7 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:OpcPEAS",
         combos = preferred
         info(f"Using {len(preferred)} security combo(s) advertised by server")
     else:
-        policies = uniq([policy, "Basic256Sha256", "Aes128_Sha256_RsaOaep", "Aes256_Sha256_RsaPss"])
+        policies = uniq([policy, "Basic256Sha256", "Aes128Sha256RsaOaep", "Aes256Sha256RsaPss"])
         modes = uniq([mode, "Sign", "SignAndEncrypt"])
         combos = [(p, m) for p in policies for m in modes]
 
@@ -111,9 +134,23 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:OpcPEAS",
             client.connect()
             warn(f"Connected using auto-generated self-signed cert ({pol}/{mod})")
             findings.append({
-                "title": "Untrusted Client Certificate Appears Accepted",
-                "severity": "Medium",
-                "description": f"Server allowed a session using an auto-generated self-signed certificate ({pol}/{mod})."
+                "title": "Auto-Generated Client Certificate Accepted",
+                "severity": "Info",
+                "category": "Cryptographic Failures",
+                "description": f"Server accepted a session using an auto-generated self-signed client certificate ({pol}/{mod}). "
+                               f"This may indicate permissive client certificate trust handling, trust-on-first-use behavior, "
+                               f"or reliance on additional authentication factors. Manual verification is required to determine "
+                               f"whether certificate trust validation is fully enforced.",
+                "check": "cert-bypass",
+                "confidence": "low",
+                "verification_status": "inconclusive",
+                "safe_check": True,
+                "destructive": False,
+                "observation": True,
+                "evidence": {
+                    "policy": pol,
+                    "mode": mod,
+                },
             })
             cleanup_temp_artifacts(auto_cert, auto_key, cnf_path, out_dir, remove_dir=created_tmp)
             return client, findings
@@ -124,9 +161,22 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:OpcPEAS",
             if err == "badcertificateuntrusted":
                 good(f"Self-signed cert rejected by {pol}/{mod} (trust validation enabled)")
                 findings.append({
-                    "title": "Certificate Trust Validation Enabled",
+                    "title": "Untrusted Client Certificate Rejected",
                     "severity": "Info",
-                    "description": f"Server rejected an untrusted self-signed certificate on {pol}/{mod}"
+                    "category": "Cryptographic Failures",
+                    "description": f"Server rejected an untrusted self-signed certificate on {pol}/{mod}. "
+                                   f"This suggests certificate trust validation is enabled.",
+                    "check": "cert-bypass",
+                    "confidence": "high",
+                    "verification_status": "confirmed-reject",
+                    "safe_check": True,
+                    "destructive": False,
+                    "observation": True,
+                    "evidence": {
+                        "policy": pol,
+                        "mode": mod,
+                        "error": err,
+                    },
                 })
                 safe_disconnect(client)
                 cleanup_temp_artifacts(auto_cert, auto_key, cnf_path, out_dir, remove_dir=created_tmp)
@@ -141,8 +191,18 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:OpcPEAS",
         findings.append({
             "title": "Connection Failed",
             "severity": "Info",
-            "description": "All connection strategies failed",
-            "details": last_errors[:10]
+            "category": "Connection",
+            "description": "All connection strategies failed.",
+            "details": last_errors[:10],
+            "check": "connection",
+            "confidence": "high",
+            "verification_status": "failed-all-strategies",
+            "safe_check": True,
+            "destructive": False,
+            "observation": True,
+            "evidence": {
+                "errors": last_errors[:10],
+            },
         })
 
     return None, findings

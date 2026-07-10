@@ -1,6 +1,7 @@
 import datetime
-from opcua import Client, ua
-from .banner import section, good, bad, info, warn
+from asyncua.sync import Client
+from asyncua import ua
+from .banner import critical, section, good, bad, info, warn
 from .helpers import sr, sn, sc, safe_disconnect, format_exc
 
 
@@ -17,13 +18,20 @@ INTERESTING_KW = [
 def normalize_policy(policy_uri):
     try:
         if "#" in policy_uri:
-            return policy_uri.split("#")[-1]
-        return str(policy_uri)
+            name = policy_uri.split("#")[-1]
+        else:
+            name = str(policy_uri)
+        return name.replace("_", "")
     except Exception:
         return str(policy_uri)
 
 
 def normalize_mode(mode):
+    if hasattr(mode, "name"):
+        name = mode.name
+        if name == "None_":
+            return "None"
+        return name
     s = str(mode)
     if "SignAndEncrypt" in s:
         return "SignAndEncrypt"
@@ -35,6 +43,8 @@ def normalize_mode(mode):
 
 
 def token_type_to_str(token_type):
+    if hasattr(token_type, "name"):
+        return token_type.name
     s = str(token_type)
     if "Anonymous" in s or s.endswith(".0") or s == "0":
         return "Anonymous"
@@ -64,10 +74,10 @@ def enum_endpoints(target, report_data, timeout=5):
                 "tokens": []
             }
 
-            if policy == "None" or mode_str == "None":
-                bad(f"INSECURE: {ep.EndpointUrl} | {mode_str} | {policy}")
+            if policy == "None" and mode_str == "None":
+                critical(f"INSECURE: {ep.EndpointUrl} | {mode_str} | {policy}")
             elif "Basic128" in policy or policy == "Basic256":
-                warn(f"WEAK/LEGACY: {ep.EndpointUrl} | {mode_str} | {policy}")
+                bad(f"WEAK/LEGACY: {ep.EndpointUrl} | {mode_str} | {policy}")
             else:
                 good(f"{ep.EndpointUrl} | {mode_str} | {policy}")
 
@@ -75,7 +85,7 @@ def enum_endpoints(target, report_data, timeout=5):
                 tt = token_type_to_str(token.TokenType)
                 ep_info["tokens"].append(tt)
                 if tt == "Anonymous":
-                    bad("  Token: Anonymous access enabled")
+                    warn("  Token: Anonymous")
                 elif tt == "UserName":
                     info("  Token: Username/Password")
                 elif tt == "Certificate":
@@ -303,7 +313,7 @@ def enum_objects_deep(client, report_data, max_depth=8):
             current_path = f"{path}/{name}"
 
             try:
-                node_class = child.get_node_class()
+                node_class = child.read_node_class()
             except Exception:
                 node_class = None
 

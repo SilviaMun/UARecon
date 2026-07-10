@@ -1,31 +1,53 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
 # Virtual environments
 venv/
 .venv/
-env/
 
-# Python cache / compiled files
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+# Test / tooling caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 
-# Editor / IDE
-.vscode/
-.idea/
-
-# Swap / temp
-*.swp
-*.swo
-*~
-
-# Build / packaging
+# Build artifacts
 build/
 dist/
 *.egg-info/
+.eggs/
 
-# Tool output
-opcpeas_report_*.json
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local assistant metadata
+.claude/
+
+# Generated reports / temp output
+reports/
+tmp/
+temp/
+*.log
+
+# Certificates / keys / crypto material
+*.pem
+*.key
+*.csr
+*.crt
+*.pfx
+*.p12
+
+# Local env / secrets
+.env
+.env.*
+*.local

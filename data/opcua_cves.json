@@ -1,587 +1,685 @@
 [
   {
-    "cve": "CVE-2017-12069",
-    "title": "Improper validation of trust chain in OpenSecureChannel handshake",
-    "vendor": "Multiple",
-    "product": "OPC UA implementations",
-    "component": "OpenSecureChannel / trust-chain validation",
-    "affected": "various implementations",
-    "fixed": "implementation-specific",
+    "cve": "CVE-2017-11672",
+    "title": "Unquoted Service Path in LDS Allows Unauthorized Executable Execution",
+    "vendor": "OPC Foundation",
+    "product": "LDS.02.335.1",
+    "product_tag": "lds",
+    "affected": "LDS.02.335.1, LDS.1.03.348, LDS-1.03.355, LDS-1.03.362",
+    "fixed": "Update LDS to version 1.03.367 or later.",
+    "fixed_version": "1.03.367",
+    "cvss_score": 4.4,
+    "cvss_vector": "CVSS:3.0/AV:L/AC:L/PR:H/UI:N/S:U/C:N/I:N/A:H/E:F/RL:O/RC:C/CR:L/IR:M/AR:M/MAV:L/MAC:L/MPR:H/MUI:N/MS:U/MC:N/MI:N/MA:H",
+    "severity": "Medium",
+    "cwe": [],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2017-11672.pdf",
+      "https://www.cve.org/CVERecord?id=CVE-2017-11672",
+      "https://opcfoundation.org/developer-tools/developer-kits-unified-architecture/local-discovery-server-lds/"
+    ],
+    "description": "Execution of unauthorized executables The Local Discovery Server (LDS) is installed with an unquoted service path. This could allow the execution of unauthorized executables on the target machine.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (CSAF)"
+  },
+  {
+    "cve": "CVE-2017-12070",
+    "title": "Unsigned DLLs in OPC UA .NET Sample Applications Allow Arbitrary Code Execution",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA .NET Standard Stack <1.02.336.0",
+    "product_tag": "dotnet",
+    "affected": "OPC UA .NET Standard Stack <1.02.336.0",
+    "fixed": "The OPC Foundation no longer provides pre-built binaries. Vendors should rebuild from signed source code.",
+    "fixed_version": "1.02.336.0",
+    "cvss_score": 5.8,
+    "cvss_vector": "CVSS:3.0/AV:L/AC:H/PR:H/UI:R/S:U/C:L/I:H/A:H/E:U/RL:O/RC:R/CR:L/IR:L/AR:L/MAV:L/MAC:H/MPR:H/MUI:R/MS:U/MC:N/MI:H/MA:H",
+    "severity": "Medium",
+    "cwe": [],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2017-12070.pdf",
+      "https://www.cve.org/CVERecord?id=CVE-2017-12070",
+      "https://github.com/OPCFoundation/UA-.NET"
+    ],
+    "description": "Arbitrary code execution through unsigned DLL replacement Unsigned versions of the DLLs distributed by the OPC Foundation may be replaced with malicious code.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (CSAF)"
+  },
+  {
+    "cve": "CVE-2017-17443",
+    "title": "LDS Crash via Invalid Configuration File Data",
+    "vendor": "OPC Foundation",
+    "product": "LDS version 1.03.370",
+    "product_tag": "generic",
+    "affected": "LDS version 1.03.370",
+    "fixed": "Update LDS from version 1.03.370 to version 1.03.371.",
+    "fixed_version": "1.03.370",
+    "cvss_score": 4.4,
+    "cvss_vector": "CVSS:3.0/AV:L/AC:L/PR:H/UI:N/S:U/C:N/I:N/A:H/E:F/RL:O/RC:C/CR:L/IR:L/AR:L/MAV:L/MAC:L/MPR:H/MUI:N/MS:U/MC:N/MI:N/MA:H",
+    "severity": "Medium",
+    "cwe": [],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2017-17443.pdf",
+      "http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-17443",
+      "https://opcfoundation.org/developer-tools/developer-kits-unified-architecture/local-discovery-server-lds/"
+    ],
+    "description": "Denial of Service (crash) An attacker with access to the LDS configuration file can trigger a crash by placing invalid data into it. The LDS becomes unavailable until the file is repaired.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (CSAF)"
+  },
+  {
+    "cve": "CVE-2018-12086",
+    "title": "Buffer overflow in OPC UA applications allows remote attackers to trigger a stack overflow with carefully structured requests.",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "generic",
+    "affected": "Buffer overflow in OPC UA applications allows remote attackers to trigger a stack overflow with carefully structured requests.",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 7.5,
+    "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+    "severity": "High",
+    "cwe": [
+      "CWE-787"
+    ],
+    "protocol_generic": true,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2018-12086.pdf",
+      "http://lists.opensuse.org/opensuse-security-announce/2020-03/msg00027.html",
+      "http://www.securityfocus.com/bid/105538",
+      "http://www.securitytracker.com/id/1041909",
+      "https://opcfoundation-onlineapplications.org/faq/SecurityBulletins/OPC_Foundation_Security_Bulletin_CVE-2018-12086.pdf",
+      "https://www.debian.org/security/2018/dsa-4359"
+    ],
+    "description": "Buffer overflow in OPC UA applications allows remote attackers to trigger a stack overflow with carefully structured requests.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2018-12087",
+    "title": "Failure to validate certificates in OPC Foundation UA Client Applications communicating without security allows attackers with control over a piece of network infrastructure to decrypt passwords.",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "generic",
+    "affected": "Failure to validate certificates in OPC Foundation UA Client Applications communicating without security allows attackers with control over a piece of network infrastructure to decrypt passwords.",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 5.3,
+    "cvss_vector": "CVSS:3.0/AV:P/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N",
+    "severity": "Medium",
+    "cwe": [
+      "CWE-295"
+    ],
+    "protocol_generic": true,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2018-12087.pdf",
+      "https://opcfoundation-onlineapplications.org/faq/SecurityBulletins/OPC_Foundation_Security_Bulletin_CVE-2018-12087.pdf"
+    ],
+    "description": "Failure to validate certificates in OPC Foundation UA Client Applications communicating without security allows attackers with control over a piece of network infrastructure to decrypt passwords.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2018-12585",
+    "title": "An XXE vulnerability in the OPC UA Java and .NET Legacy Stack can allow remote attackers to trigger a denial of service.",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "dotnet-legacy",
+    "affected": "An XXE vulnerability in the OPC UA Java and .NET Legacy Stack can allow remote attackers to trigger a denial of service.",
+    "fixed": null,
+    "fixed_version": null,
     "cvss_score": 8.2,
     "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:H",
     "severity": "High",
     "cwe": [
       "CWE-611"
     ],
-    "match_keywords": [
-      "opc ua",
-      "generic",
-      "all"
-    ],
-    "protocol_generic": true,
+    "protocol_generic": false,
     "references": [
-      "https://www.siemens.com/cert/pool/cert/siemens_security_advisory_ssa-535640.pdf",
-      "http://www.securityfocus.com/bid/100559",
-      "http://www.securitytracker.com/id/1039510",
-      "https://opcfoundation-onlineapplications.org/faq/SecurityBulletins/OPC_Foundation_Security_Bulletin_CVE-2017-12069.pdf"
-    ]
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2018-12585.pdf",
+      "http://www.securityfocus.com/bid/105538",
+      "https://opcfoundation-onlineapplications.org/faq/SecurityBulletins/OPC_Foundation_Security_Bulletin_CVE-2018-12585.pdf"
+    ],
+    "description": "An XXE vulnerability in the OPC UA Java and .NET Legacy Stack can allow remote attackers to trigger a denial of service.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
   },
   {
-    "cve": "CVE-2019-8287",
-    "title": "Stack buffer overflow in UA Binary decoder",
-    "vendor": "Multiple",
-    "product": "OPC UA implementations",
-    "component": "UA Binary decoder",
-    "affected": "various implementations",
-    "fixed": "implementation-specific",
-    "cvss_score": 9.8,
-    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-    "severity": "Critical",
+    "cve": "CVE-2018-7559",
+    "title": "An issue was discovered in OPC UA .NET Standard Stack and Sample Code before GitHub commit 2018-04-12, and OPC UA .NET Legacy Stack and Sample Code before GitHub commit 2018-03-13. A vulnerability in ",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "dotnet",
+    "affected": "An issue was discovered in OPC UA .NET Standard Stack and Sample Code before GitHub commit 2018-04-12, and OPC UA .NET Legacy Stack and Sample Code before GitHub commit 2018-03-13. A vulnerability in ",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 5.3,
+    "cvss_vector": "CVSS:3.0/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:N",
+    "severity": "Medium",
     "cwe": [
-      "CWE-120"
+      "CWE-320"
     ],
-    "match_keywords": [
-      "opc ua",
-      "generic",
-      "all"
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2018-7559.pdf",
+      "http://www.securityfocus.com/bid/108688",
+      "https://github.com/OPCFoundation/UA-.NET-Legacy/commit/e2a781b38efb8686d2bd850c2f2372b5c670bc45",
+      "https://github.com/OPCFoundation/UA-.NETStandard/commit/ebcf026a54dd0c9052cff009d96d827ac923d150",
+      "https://opcfoundation-onlineapplications.org/faq/SecurityBulletins/OPC_Foundation_Security_Bulletin_CVE-2018-7559.pdf"
+    ],
+    "description": "An issue was discovered in OPC UA .NET Standard Stack and Sample Code before GitHub commit 2018-04-12, and OPC UA .NET Legacy Stack and Sample Code before GitHub commit 2018-03-13. A vulnerability in OPC UA applications can allow a remote attacker to determine a Server's private key by sending carefully constructed bad UserIdentityTokens as part of an oracle attack.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2019-19135",
+    "title": "In OPC Foundation OPC UA .NET Standard codebase 1.4.357.28, servers do not create sufficiently random numbers in OPCFoundation.NetStandard.Opc.Ua before 1.4.359.31, which allows man in the middle atta",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "dotnet",
+    "affected": "In OPC Foundation OPC UA .NET Standard codebase 1.4.357.28, servers do not create sufficiently random numbers in OPCFoundation.NetStandard.Opc.Ua before 1.4.359.31, which allows man in the middle atta",
+    "fixed": null,
+    "fixed_version": "1.4.359.31",
+    "cvss_score": 7.4,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N",
+    "severity": "High",
+    "cwe": [
+      "CWE-330"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2019-19135.pdf",
+      "https://opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2019-19135.pdf",
+      "https://opcfoundation.org/security-bulletins/"
+    ],
+    "description": "In OPC Foundation OPC UA .NET Standard codebase 1.4.357.28, servers do not create sufficiently random numbers in OPCFoundation.NetStandard.Opc.Ua before 1.4.359.31, which allows man in the middle attackers to reuse encrypted user credentials sent over the network.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2020-29457",
+    "title": "A Privilege Elevation vulnerability in OPC UA .NET Standard Stack 1.4.363.107 could allow a rogue application to establish a secure connection.",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "dotnet",
+    "affected": "A Privilege Elevation vulnerability in OPC UA .NET Standard Stack 1.4.363.107 could allow a rogue application to establish a secure connection.",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 4.4,
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:N/I:H/A:N",
+    "severity": "Medium",
+    "cwe": [
+      "CWE-295"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2020-29457.pdf",
+      "https://github.com/OPCFoundation/UA-.NETStandard",
+      "https://opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2020-29457.pdf",
+      "https://www.nuget.org/packages/OPCFoundation.NetStandard.Opc.Ua/"
+    ],
+    "description": "A Privilege Elevation vulnerability in OPC UA .NET Standard Stack 1.4.363.107 could allow a rogue application to establish a secure connection.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2020-8867",
+    "title": "This vulnerability allows remote attackers to create a denial-of-service condition on affected installations of OPC Foundation UA .NET Standard 1.04.358.30. Authentication is not required to exploit t",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "dotnet",
+    "affected": "This vulnerability allows remote attackers to create a denial-of-service condition on affected installations of OPC Foundation UA .NET Standard 1.04.358.30. Authentication is not required to exploit t",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 7.5,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+    "severity": "High",
+    "cwe": [
+      "CWE-367",
+      "CWE-613"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2020-8867.pdf",
+      "https://opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2020-8867.pdf",
+      "https://www.zerodayinitiative.com/advisories/ZDI-20-536/"
+    ],
+    "description": "This vulnerability allows remote attackers to create a denial-of-service condition on affected installations of OPC Foundation UA .NET Standard 1.04.358.30. Authentication is not required to exploit this vulnerability. The specific flaw exists within the handling of sessions. The issue results from the lack of proper locking when performing operations on an object. An attacker can leverage this vulnerability to create a denial-of-service condition against the application. Was ZDI-CAN-10295.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2021-27432",
+    "title": "OPC Foundation UA .NET Standard versions prior to 1.4.365.48 and OPC UA .NET Legacy are vulnerable to an uncontrolled recursion, which may allow an attacker to trigger a stack overflow.",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "dotnet",
+    "affected": "OPC Foundation UA .NET Standard versions prior to 1.4.365.48 and OPC UA .NET Legacy are vulnerable to an uncontrolled recursion, which may allow an attacker to trigger a stack overflow.",
+    "fixed": null,
+    "fixed_version": "1.4.365.48",
+    "cvss_score": 7.5,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+    "severity": "High",
+    "cwe": [
+      "CWE-674"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2021-27432.pdf",
+      "https://us-cert.cisa.gov/ics/advisories/icsa-21-133-03"
+    ],
+    "description": "OPC Foundation UA .NET Standard versions prior to 1.4.365.48 and OPC UA .NET Legacy are vulnerable to an uncontrolled recursion, which may allow an attacker to trigger a stack overflow.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2021-27434",
+    "title": "Products with Unified Automation .NET based OPC UA Client/Server SDK Bundle: Versions V3.0.7 and prior (.NET 4.5, 4.0, and 3.5 Framework versions only) are vulnerable to an uncontrolled recursion, whi",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "generic",
+    "affected": "Products with Unified Automation .NET based OPC UA Client/Server SDK Bundle: Versions V3.0.7 and prior (.NET 4.5, 4.0, and 3.5 Framework versions only) are vulnerable to an uncontrolled recursion, whi",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 7.5,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+    "severity": "High",
+    "cwe": [
+      "CWE-200",
+      "CWE-674"
     ],
     "protocol_generic": true,
     "references": [
-      "https://us-cert.cisa.gov/ics/advisories/icsa-20-343-08",
-      "https://cert-portal.siemens.com/productcert/pdf/ssa-478893.pdf",
-      "https://lists.debian.org/debian-lts-announce/2019/12/msg00028.html",
-      "https://www.openwall.com/lists/oss-security/2018/12/10/5"
-    ]
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2021-27434.pdf",
+      "https://us-cert.cisa.gov/ics/advisories/icsa-21-133-04"
+    ],
+    "description": "Products with Unified Automation .NET based OPC UA Client/Server SDK Bundle: Versions V3.0.7 and prior (.NET 4.5, 4.0, and 3.5 Framework versions only) are vulnerable to an uncontrolled recursion, which may allow an attacker to trigger a stack overflow.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
   },
   {
-    "cve": "CVE-2023-27334",
-    "title": "Use-after-free in Unified Automation UA .NET SDK",
-    "vendor": "Unified Automation",
-    "product": "UA .NET SDK",
-    "component": "SDK internals",
-    "affected": "versions before patch",
-    "fixed": "vendor patch required",
+    "cve": "CVE-2021-40142",
+    "title": "In OPC Foundation Local Discovery Server (LDS) before 1.04.402.463, remote attackers can cause a denial of service (DoS) by sending carefully crafted messages that lead to Access of a Memory Location ",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "lds",
+    "affected": "In OPC Foundation Local Discovery Server (LDS) before 1.04.402.463, remote attackers can cause a denial of service (DoS) by sending carefully crafted messages that lead to Access of a Memory Location ",
+    "fixed": null,
+    "fixed_version": "1.04.402.463",
+    "cvss_score": 7.5,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+    "severity": "High",
+    "cwe": [
+      "CWE-119"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2021-40142.pdf",
+      "https://cert-portal.siemens.com/productcert/pdf/ssa-321292.pdf",
+      "https://opcfoundation.org/security-bulletins/"
+    ],
+    "description": "In OPC Foundation Local Discovery Server (LDS) before 1.04.402.463, remote attackers can cause a denial of service (DoS) by sending carefully crafted messages that lead to Access of a Memory Location After the End of a Buffer.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2021-45117",
+    "title": "The OPC autogenerated ANSI C stack stubs (in the NodeSets) do not handle all error cases. This can lead to a NULL pointer dereference.",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "ansi-c",
+    "affected": "The OPC autogenerated ANSI C stack stubs (in the NodeSets) do not handle all error cases. This can lead to a NULL pointer dereference.",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 6.5,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+    "severity": "Medium",
+    "cwe": [
+      "CWE-476"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2021-45117.pdf",
+      "https://cert-portal.siemens.com/productcert/pdf/ssa-285795.pdf",
+      "https://www.youtube.com/watch?v=qv-RBdCaV4k"
+    ],
+    "description": "The OPC autogenerated ANSI C stack stubs (in the NodeSets) do not handle all error cases. This can lead to a NULL pointer dereference.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2022-29862",
+    "title": "An infinite loop in OPC UA .NET Standard Stack 1.04.368 allows a remote attackers to cause the application to hang via a crafted message.",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "dotnet",
+    "affected": "An infinite loop in OPC UA .NET Standard Stack 1.04.368 allows a remote attackers to cause the application to hang via a crafted message.",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 7.5,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+    "severity": "High",
+    "cwe": [
+      "CWE-835"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2022-29862.pdf",
+      "https://opcfoundation.org/security/"
+    ],
+    "description": "An infinite loop in OPC UA .NET Standard Stack 1.04.368 allows a remote attackers to cause the application to hang via a crafted message.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2022-29863",
+    "title": "OPC UA .NET Standard Stack 1.04.368 allows remote attacker to cause a crash via a crafted message that triggers excessive memory allocation.",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "dotnet",
+    "affected": "OPC UA .NET Standard Stack 1.04.368 allows remote attacker to cause a crash via a crafted message that triggers excessive memory allocation.",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 7.5,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+    "severity": "High",
+    "cwe": [
+      "CWE-770"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2022-29863.pdf",
+      "https://opcfoundation.org/security/"
+    ],
+    "description": "OPC UA .NET Standard Stack 1.04.368 allows remote attacker to cause a crash via a crafted message that triggers excessive memory allocation.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2022-29865",
+    "title": "OPC UA .NET Standard Stack allows a remote attacker to bypass the application authentication check via crafted fake credentials.",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "dotnet",
+    "affected": "OPC UA .NET Standard Stack allows a remote attacker to bypass the application authentication check via crafted fake credentials.",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 7.5,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+    "severity": "High",
+    "cwe": [
+      "CWE-287"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2022-29865.pdf",
+      "https://opcfoundation.org/security/"
+    ],
+    "description": "OPC UA .NET Standard Stack allows a remote attacker to bypass the application authentication check via crafted fake credentials.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2022-29866",
+    "title": "OPC UA .NET Standard Stack 1.04.368 allows a remote attacker to exhaust the memory resources of a server via a crafted request that triggers Uncontrolled Resource Consumption.",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "dotnet",
+    "affected": "OPC UA .NET Standard Stack 1.04.368 allows a remote attacker to exhaust the memory resources of a server via a crafted request that triggers Uncontrolled Resource Consumption.",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 7.5,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+    "severity": "High",
+    "cwe": [
+      "CWE-400"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2022-29866.pdf",
+      "https://opcfoundation.org/security/"
+    ],
+    "description": "OPC UA .NET Standard Stack 1.04.368 allows a remote attacker to exhaust the memory resources of a server via a crafted request that triggers Uncontrolled Resource Consumption.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2022-30551",
+    "title": "OPC UA Legacy Java Stack 2022-04-01 allows a remote attacker to cause a server to stop processing messages by sending crafted messages that exhaust available resources.",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "java",
+    "affected": "OPC UA Legacy Java Stack 2022-04-01 allows a remote attacker to cause a server to stop processing messages by sending crafted messages that exhaust available resources.",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 7.5,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+    "severity": "High",
+    "cwe": [
+      "CWE-400"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2022-30551.pdf",
+      "https://github.com/OPCFoundation/UA-Java-Legacy",
+      "https://opcfoundation.org"
+    ],
+    "description": "OPC UA Legacy Java Stack 2022-04-01 allows a remote attacker to cause a server to stop processing messages by sending crafted messages that exhaust available resources.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2022-33916",
+    "title": "OPC UA .NET Standard Reference Server 1.04.368 allows a remote attacker to cause the application to access sensitive information.",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "dotnet",
+    "affected": "OPC UA .NET Standard Reference Server 1.04.368 allows a remote attacker to cause the application to access sensitive information.",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 7.5,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+    "severity": "High",
+    "cwe": [],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2022-33916.pdf",
+      "https://opcfoundation.org"
+    ],
+    "description": "OPC UA .NET Standard Reference Server 1.04.368 allows a remote attacker to cause the application to access sensitive information.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2022-44725",
+    "title": "OPC Foundation Local Discovery Server (LDS) through 1.04.403.478 uses a hard-coded file path to a configuration file. This allows a normal user to create a malicious file that is loaded by LDS (runnin",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "lds",
+    "affected": "OPC Foundation Local Discovery Server (LDS) through 1.04.403.478 uses a hard-coded file path to a configuration file. This allows a normal user to create a malicious file that is loaded by LDS (runnin",
+    "fixed": null,
+    "fixed_version": null,
+    "cvss_score": 7.8,
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+    "severity": "High",
+    "cwe": [
+      "CWE-732"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2022-44725.pdf",
+      "https://opcfoundation.org/developer-tools/samples-and-tools-unified-architecture/local-discovery-server-lds/"
+    ],
+    "description": "OPC Foundation Local Discovery Server (LDS) through 1.04.403.478 uses a hard-coded file path to a configuration file. This allows a normal user to create a malicious file that is loaded by LDS (running as a high-privilege user).",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2023-27321",
+    "title": "OPC Foundation UA .NET Standard ConditionRefresh Resource Exhaustion Denial-of-Service Vulnerability. This vulnerability allows remote attackers to create a denial-of-service condition on affected ins",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "dotnet",
+    "affected": "OPC Foundation UA .NET Standard ConditionRefresh Resource Exhaustion Denial-of-Service Vulnerability. This vulnerability allows remote attackers to create a denial-of-service condition on affected ins",
+    "fixed": null,
+    "fixed_version": null,
     "cvss_score": 7.5,
     "cvss_vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
     "severity": "High",
     "cwe": [
-      "CWE-400",
-      "NVD-CWE-noinfo"
-    ],
-    "match_keywords": [
-      "unified automation",
-      "uaexpert"
+      "CWE-400"
     ],
     "protocol_generic": false,
     "references": [
-      "https://www.zerodayinitiative.com/advisories/ZDI-23-1054/",
-      "https://industrial.softing.com/fileadmin/psirt/downloads/syt-2023-1.html"
-    ]
-  },
-  {
-    "cve": "CVE-2023-27335",
-    "title": "Stack buffer overflow in Unified Automation C++ SDK",
-    "vendor": "Unified Automation",
-    "product": "UA C++ SDK",
-    "component": "C++ SDK",
-    "affected": "versions before patch",
-    "fixed": "vendor patch required",
-    "cvss_score": 9.6,
-    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H",
-    "severity": "Critical",
-    "cwe": [
-      "CWE-79"
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2023-27321.pdf",
+      "https://www.zerodayinitiative.com/advisories/ZDI-23-548/"
     ],
-    "match_keywords": [
-      "unified automation"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://www.zerodayinitiative.com/advisories/ZDI-23-1057/"
-    ]
-  },
-  {
-    "cve": "CVE-2023-29444",
-    "title": "Heap-based buffer overflow in KEPServerEX OPC-UA component",
-    "vendor": "Kepware",
-    "product": "KEPServerEX",
-    "component": "OPC-UA component",
-    "affected": "< 6.14",
-    "fixed": "6.14",
-    "cvss_score": 6.3,
-    "cvss_vector": "CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:U/C:H/I:H/A:H",
-    "severity": "Medium",
-    "cwe": [
-      "CWE-427"
-    ],
-    "match_keywords": [
-      "kepware",
-      "kepserverex",
-      "thingworx"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://www.cisa.gov/news-events/ics-advisories/icsa-23-243-03",
-      "https://www.ptc.com/en/support/article/cs399528"
-    ]
-  },
-  {
-    "cve": "CVE-2023-29445",
-    "title": "Stack-based buffer overflow in KEPServerEX OPC-UA component",
-    "vendor": "Kepware",
-    "product": "KEPServerEX",
-    "component": "OPC-UA component",
-    "affected": "< 6.14",
-    "fixed": "6.14",
-    "cvss_score": 7.8,
-    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
-    "severity": "High",
-    "cwe": [
-      "CWE-427"
-    ],
-    "match_keywords": [
-      "kepware",
-      "kepserverex",
-      "thingworx"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://www.cisa.gov/news-events/ics-advisories/icsa-23-243-03",
-      "https://www.dragos.com/advisory/ptcs-kepserverex-vulnerabilities/",
-      "https://www.ptc.com/en/support/article/cs399528"
-    ]
+    "description": "OPC Foundation UA .NET Standard ConditionRefresh Resource Exhaustion Denial-of-Service Vulnerability. This vulnerability allows remote attackers to create a denial-of-service condition on affected installations of OPC Foundation UA .NET Standard. Authentication is not required to exploit this vulnerability.\n\nThe specific flaw exists within the handling of OPC UA ConditionRefresh requests. By sending a large number of requests, an attacker can consume all available resources on the server. An att",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
   },
   {
     "cve": "CVE-2023-31048",
-    "title": "Insufficient access control in Prosys OPC UA Simulation Server",
-    "vendor": "Prosys",
-    "product": "Prosys OPC UA Simulation Server",
-    "component": "Simulation Server",
-    "affected": "< 5.0.2",
-    "fixed": "5.0.2",
+    "title": "The OPC UA .NET Standard Reference Server before 1.4.371.86. places sensitive information into an error message that may be seen remotely.",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA",
+    "product_tag": "dotnet",
+    "affected": "The OPC UA .NET Standard Reference Server before 1.4.371.86. places sensitive information into an error message that may be seen remotely.",
+    "fixed": null,
+    "fixed_version": "1.4.371.86",
     "cvss_score": 5.3,
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
     "severity": "Medium",
     "cwe": [
       "CWE-209"
     ],
-    "match_keywords": [
-      "prosys",
-      "simulation server"
-    ],
     "protocol_generic": false,
     "references": [
       "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2023-31048.pdf",
       "https://github.com/OPCFoundation/UA-.NETStandard/releases",
       "https://github.com/OPCFoundation/UA-.NETStandard/releases/tag/1.4.371.86"
-    ]
+    ],
+    "description": "The OPC UA .NET Standard Reference Server before 1.4.371.86. places sensitive information into an error message that may be seen remotely.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
   },
   {
-    "cve": "CVE-2023-32784",
-    "title": "Memory leak via repeated CreateSession requests",
-    "vendor": "open62541",
-    "product": "open62541",
-    "component": "CreateSession handling",
-    "affected": "< 1.3.6",
-    "fixed": "1.3.6",
-    "cvss_score": 7.5,
-    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
-    "severity": "High",
-    "cwe": [
-      "CWE-319"
-    ],
-    "match_keywords": [
-      "open62541"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://github.com/keepassxreboot/keepassxc/discussions/9433",
-      "https://github.com/vdohney/keepass-password-dumper",
-      "https://sourceforge.net/p/keepass/discussion/329220/thread/f3438e6283/"
-    ]
-  },
-  {
-    "cve": "CVE-2023-35169",
-    "title": "Denial of service via malformed ExtensionObject",
-    "vendor": "Eclipse",
-    "product": "Milo",
-    "component": "ExtensionObject handling",
-    "affected": "< 0.6.11",
-    "fixed": "0.6.11",
-    "cvss_score": 9.0,
-    "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:H",
-    "severity": "Critical",
-    "cwe": [
-      "CWE-22"
-    ],
-    "match_keywords": [
-      "milo",
-      "eclipse milo"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://github.com/Webklex/php-imap/blob/5.2.0/src/Attachment.php#L251-L255",
-      "https://github.com/Webklex/php-imap/blob/5.2.0/src/Attachment.php#L252",
-      "https://github.com/Webklex/php-imap/pull/414",
-      "https://github.com/Webklex/php-imap/releases/tag/5.3.0",
-      "https://github.com/Webklex/php-imap/security/advisories/GHSA-47p7-xfcc-4pv9"
-    ]
-  },
-  {
-    "cve": "CVE-2023-37550",
-    "title": "OPC-UA server DoS via crafted request",
-    "vendor": "CODESYS",
-    "product": "CODESYS",
-    "component": "OPC UA server",
-    "affected": "< 3.5.19.20",
-    "fixed": "3.5.19.20",
-    "cvss_score": 6.5,
-    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
-    "severity": "Medium",
-    "cwe": [
-      "CWE-20",
-      "NVD-CWE-noinfo"
-    ],
-    "match_keywords": [
-      "codesys"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://cert.vde.com/en/advisories/VDE-2023-019"
-    ]
-  },
-  {
-    "cve": "CVE-2023-37551",
-    "title": "OPC-UA server DoS via crafted certificate",
-    "vendor": "CODESYS",
-    "product": "CODESYS",
-    "component": "Certificate handling",
-    "affected": "< 3.5.19.20",
-    "fixed": "3.5.19.20",
-    "cvss_score": 6.5,
-    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N",
-    "severity": "Medium",
-    "cwe": [
-      "CWE-552"
-    ],
-    "match_keywords": [
-      "codesys"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://cert.vde.com/en/advisories/VDE-2023-019/"
-    ]
-  },
-  {
-    "cve": "CVE-2023-39475",
-    "title": "OPC-UA deserialization leading to RCE",
-    "vendor": "Inductive Automation",
-    "product": "Ignition",
-    "component": "OPC-UA deserialization",
-    "affected": "< 8.1.31",
-    "fixed": "8.1.31",
-    "cvss_score": 9.8,
-    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-    "severity": "Critical",
-    "cwe": [
-      "CWE-502"
-    ],
-    "match_keywords": [
-      "ignition",
-      "inductive automation"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://www.zerodayinitiative.com/advisories/ZDI-23-1047/"
-    ]
-  },
-  {
-    "cve": "CVE-2023-39476",
-    "title": "OPC-UA auth bypass leading to RCE",
-    "vendor": "Inductive Automation",
-    "product": "Ignition",
-    "component": "OPC-UA subsystem",
-    "affected": "< 8.1.31",
-    "fixed": "8.1.31",
-    "cvss_score": 9.8,
-    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-    "severity": "Critical",
-    "cwe": [
-      "CWE-502"
-    ],
-    "match_keywords": [
-      "ignition",
-      "inductive automation"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://www.zerodayinitiative.com/advisories/ZDI-23-1046/"
-    ]
-  },
-  {
-    "cve": "CVE-2023-47457",
-    "title": "Uncontrolled resource consumption causing DoS",
-    "vendor": "node-opcua",
-    "product": "node-opcua",
-    "component": "Server resource handling",
-    "affected": "< 2.108.0",
-    "fixed": "2.108.0",
-    "cvss_score": null,
-    "cvss_vector": null,
-    "severity": "High",
-    "cwe": [],
-    "match_keywords": [
-      "node-opcua",
-      "nodejs"
-    ],
-    "protocol_generic": false,
-    "references": []
-  },
-  {
-    "cve": "CVE-2024-10525",
-    "title": "Heap-based overflow in SUBACK handler",
-    "vendor": "Eclipse Mosquitto",
-    "product": "Mosquitto",
-    "component": "MQTT broker",
-    "affected": "1.3.2 - 2.0.18",
-    "fixed": "after 2.0.18",
-    "cvss_score": 9.8,
-    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-    "severity": "Critical",
-    "cwe": [
-      "CWE-122",
-      "CWE-787"
-    ],
-    "match_keywords": [
-      "mosquitto"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://github.com/eclipse-mosquitto/mosquitto/commit/8ab20b4ba4204fdcdec78cb4d9f03c944a6e0e1c",
-      "https://gitlab.eclipse.org/security/vulnerability-reports/-/issues/190",
-      "https://mosquitto.org/blog/2024/10/version-2-0-19-released/",
-      "https://lists.debian.org/debian-lts-announce/2025/02/msg00022.html"
-    ]
-  },
-  {
-    "cve": "CVE-2024-10526",
-    "title": "Memory leak / UAF / segfault via CONNECT-DISCONNECT sequences",
-    "vendor": "Eclipse Mosquitto",
-    "product": "Mosquitto",
-    "component": "MQTT broker",
-    "affected": "<= 2.0.18a",
-    "fixed": "after 2.0.18a",
-    "cvss_score": null,
-    "cvss_vector": null,
-    "severity": "High",
-    "cwe": [
-      "CWE-552",
-      "CWE-732"
-    ],
-    "match_keywords": [
-      "mosquitto"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://docs.velociraptor.app/announcements/2024-cves/"
-    ]
-  },
-  {
-    "cve": "CVE-2024-25380",
-    "title": "DoS via malformed OPC-UA packet causing NULL dereference",
-    "vendor": "open62541",
-    "product": "open62541",
-    "component": "Packet handling",
-    "affected": "< 1.3.9",
-    "fixed": "1.3.9",
-    "cvss_score": null,
-    "cvss_vector": null,
-    "severity": "High",
-    "cwe": [],
-    "match_keywords": [
-      "open62541"
-    ],
-    "protocol_generic": false,
-    "references": []
-  },
-  {
-    "cve": "CVE-2024-3935",
-    "title": "Double free in bridge connection with topic remapping",
-    "vendor": "Eclipse Mosquitto",
-    "product": "Mosquitto",
-    "component": "MQTT broker",
-    "affected": "2.0.0 - 2.0.18",
-    "fixed": "after 2.0.18",
-    "cvss_score": 6.5,
-    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H",
-    "severity": "Medium",
-    "cwe": [
-      "CWE-415"
-    ],
-    "match_keywords": [
-      "mosquitto"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://github.com/eclipse-mosquitto/mosquitto/commit/ae7a804dadac8f2aaedb24336df8496a9680fda9",
-      "https://gitlab.eclipse.org/security/vulnerability-reports/-/issues/197",
-      "https://mosquitto.org/blog/2024/10/version-2-0-19-released/",
-      "https://lists.debian.org/debian-lts-announce/2025/02/msg00022.html"
-    ]
-  },
-  {
-    "cve": "CVE-2024-42512",
-    "title": "Authentication bypass via deprecated Basic128Rsa15 handling",
+    "cve": "CVE-2023-32787",
+    "title": "The OPC UA Legacy Java Stack before 6f176f2 enables an attacker to block OPC UA server applications via uncontrolled resource consumption so that they can no longer serve client applications.",
     "vendor": "OPC Foundation",
-    "product": "UA-.NETStandard",
-    "component": "OPC UA .NET Standard Stack",
-    "affected": "< 1.5.374.158",
-    "fixed": "1.5.374.158",
-    "cvss_score": 8.6,
-    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:L",
-    "severity": "High",
-    "cwe": [
-      "CWE-208"
-    ],
-    "match_keywords": [
-      ".net",
-      "opc foundation",
-      "opcfoundation",
-      "ua-.netstandard",
-      "dotnetstd"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2024-42512.pdf",
-      "https://github.com/OPCFoundation/UA-.NETStandard/security/advisories/GHSA-h958-fxgg-g7w3"
-    ]
-  },
-  {
-    "cve": "CVE-2024-42513",
-    "title": "HTTPS endpoint application authentication bypass",
-    "vendor": "OPC Foundation",
-    "product": "UA-.NETStandard",
-    "component": "OPC UA .NET Standard Stack",
-    "affected": "< 1.5.374.158",
-    "fixed": "1.5.374.158",
-    "cvss_score": 5.3,
-    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
-    "severity": "Medium",
-    "cwe": [
-      "CWE-305"
-    ],
-    "match_keywords": [
-      ".net",
-      "opc foundation",
-      "opcfoundation",
-      "ua-.netstandard",
-      "dotnetstd",
-      "https"
-    ],
-    "protocol_generic": false,
-    "references": [
-      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2024-42513.pdf"
-    ]
-  },
-  {
-    "cve": "CVE-2024-44070",
-    "title": "OPC-UA server DoS via specially crafted packets",
-    "vendor": "Siemens",
-    "product": "Multiple SIMATIC products",
-    "component": "OPC-UA server",
-    "affected": "multiple SIMATIC products",
-    "fixed": "vendor patch required",
+    "product": "OPC UA",
+    "product_tag": "java",
+    "affected": "The OPC UA Legacy Java Stack before 6f176f2 enables an attacker to block OPC UA server applications via uncontrolled resource consumption so that they can no longer serve client applications.",
+    "fixed": null,
+    "fixed_version": null,
     "cvss_score": 7.5,
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
     "severity": "High",
     "cwe": [
-      "NVD-CWE-noinfo"
-    ],
-    "match_keywords": [
-      "siemens",
-      "simatic"
+      "CWE-400"
     ],
     "protocol_generic": false,
     "references": [
-      "https://github.com/FRRouting/frr/pull/16497",
-      "https://lists.debian.org/debian-lts-announce/2024/09/msg00007.html"
-    ]
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2023-32787.pdf",
+      "https://github.com/OPCFoundation/UA-Java-Legacy",
+      "https://github.com/OPCFoundation/UA-Java-Legacy/commit/6f176f2b445a27c157f1a32f225accc9ce8873c0"
+    ],
+    "description": "The OPC UA Legacy Java Stack before 6f176f2 enables an attacker to block OPC UA server applications via uncontrolled resource consumption so that they can no longer serve client applications.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (PDF + NVD)"
+  },
+  {
+    "cve": "CVE-2024-42512",
+    "title": "Bypass of application authentication via Basic128Rsa15 in OPC UA .NET Standard Stack",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA .NET Standard Stack <1.5.374.158",
+    "product_tag": "dotnet",
+    "affected": "OPC UA .NET Standard Stack <1.5.374.158",
+    "fixed": "Update to OPC UA .NET Standard Stack version 1.5.374.158 or later.",
+    "fixed_version": "1.5.374.158",
+    "cvss_score": 5.9,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
+    "severity": "Medium",
+    "cwe": [
+      "CWE-208"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2024-42512.pdf",
+      "https://www.cve.org/CVERecord?id=CVE-2024-42512",
+      "https://github.com/OPCFoundation/UA-.NETStandard/tree/1.5.374.158",
+      "https://cwe.mitre.org/data/definitions/208.html"
+    ],
+    "description": "Unauthorized attacker can bypass application authentication when Basic128Rsa15 is enabled. Most users unaffected as it is disabled by default.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (CSAF)"
+  },
+  {
+    "cve": "CVE-2024-42513",
+    "title": "Authentication bypass via HTTPS in OPC UA .NET Standard Stack",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA .NET Standard Stack <1.5.374.158",
+    "product_tag": "dotnet",
+    "affected": "OPC UA .NET Standard Stack <1.5.374.158",
+    "fixed": "Update to OPC UA .NET Standard Stack version 1.5.374.158 or later.",
+    "fixed_version": "1.5.374.158",
+    "cvss_score": 6.5,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:L/A:N",
+    "severity": "Medium",
+    "cwe": [
+      "CWE-305"
+    ],
+    "protocol_generic": false,
+    "references": [
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2024-42513.pdf",
+      "https://www.cve.org/CVERecord?id=CVE-2024-42513",
+      "https://github.com/OPCFoundation/UA-.NETStandard/tree/1.5.374.158",
+      "https://cwe.mitre.org/data/definitions/305.html"
+    ],
+    "description": "An unauthorized attacker can bypass application authentication using HTTPS endpoints with security policies other than 'None'.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (CSAF)"
   },
   {
     "cve": "CVE-2024-45526",
-    "title": "Performance degradation by saving rejected certificates after auth failure",
+    "title": "Performance degradation attack in OPC UA .NET Standard Stack",
     "vendor": "OPC Foundation",
-    "product": "UA-.NETStandard",
-    "component": "OPC UA .NET Standard Stack",
-    "affected": "< 1.5.374.118",
-    "fixed": "1.5.374.118",
+    "product": "OPC UA .NET Standard Stack <1.5.374.118",
+    "product_tag": "dotnet",
+    "affected": "OPC UA .NET Standard Stack <1.5.374.118",
+    "fixed": "Update to OPC UA .NET Standard Stack version 1.5.374.118 or later.",
+    "fixed_version": "1.5.374.118",
     "cvss_score": 5.3,
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
     "severity": "Medium",
     "cwe": [
       "CWE-770"
     ],
-    "match_keywords": [
-      ".net",
-      "opc foundation",
-      "opcfoundation",
-      "ua-.netstandard",
-      "dotnetstd"
-    ],
     "protocol_generic": false,
     "references": [
-      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2024-45526.pdf"
-    ]
+      "https://files.opcfoundation.org/SecurityBulletins/OPC%20Foundation%20Security%20Bulletin%20CVE-2024-45526.pdf",
+      "https://www.cve.org/CVERecord?id=CVE-2024-45526",
+      "https://github.com/OPCFoundation/UA-.NETStandard/releases/tag/1.5.374.118",
+      "https://cwe.mitre.org/data/definitions/770.html"
+    ],
+    "description": "An unauthorized attacker can trigger a gradual degradation in performance.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (CSAF)"
   },
   {
-    "cve": "CVE-2024-53429",
-    "title": "Pre-auth DoS via malformed SecureChannel chunks",
-    "vendor": "open62541",
-    "product": "open62541",
-    "component": "SecureChannel handling",
-    "affected": "<= 1.4.6",
-    "fixed": "patched release required",
+    "cve": "GCVE-105-2025-001",
+    "title": "Connection exhaustion via improper shutdown in OPC UA .NET Standard Stack",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA .NET Standard Stack <1.5.374.11",
+    "product_tag": "dotnet",
+    "affected": "OPC UA .NET Standard Stack <1.5.374.11",
+    "fixed": "Update to OPC UA .NET Standard Stack version 1.5.374.118 or later.",
+    "fixed_version": "1.5.374.118",
     "cvss_score": 7.5,
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
     "severity": "High",
     "cwe": [
-      "CWE-617"
-    ],
-    "match_keywords": [
-      "open62541"
+      "CWE-404"
     ],
     "protocol_generic": false,
     "references": [
-      "https://github.com/open62541/open62541/issues/6825"
-    ]
+      "https://github.com/OPCFoundation/OPC-SecurityAdvisories/tree/latest/csaf/2025/001"
+    ],
+    "description": "Denial of service via resource exhaustion. An unauthorized attacker can consume all available connections by exploiting improper resource shutdown.",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (CSAF)"
   },
   {
-    "cve": "CVE-2025-1468",
-    "title": "Basic128Rsa15 private-key compromise / auth bypass on enabled deprecated policy",
-    "vendor": "Multiple / CODESYS confirmed",
-    "product": "Multiple implementations / CODESYS Runtime Toolkit",
-    "component": "OPC UA server implementations with Basic128Rsa15 enabled",
-    "affected": "Multiple implementations; CODESYS Runtime Toolkit < 3.5.21.0",
-    "fixed": "3.5.21.0",
-    "cvss_score": 7.5,
-    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
-    "severity": "High",
-    "cwe": [
-      "CWE-208",
-      "CWE-203"
-    ],
-    "match_keywords": [
-      "codesys",
-      "opc ua",
-      "basic128rsa15",
-      "runtime toolkit",
-      "opcfoundation",
-      ".net"
-    ],
+    "cve": "GCVE-105-2025-002",
+    "title": "Security Update for the OPC UA Specification",
+    "vendor": "OPC Foundation",
+    "product": "OPC UA Specification Part 6 - Mappings <1.5.6",
+    "product_tag": "spec",
+    "affected": "OPC UA Specification Part 6 - Mappings <1.5.6, OPC UA Specification Part 2 - Security <1.5.6",
+    "fixed": null,
+    "fixed_version": "1.5.6",
+    "cvss_score": null,
+    "cvss_vector": null,
+    "severity": "Unknown",
+    "cwe": [],
     "protocol_generic": true,
     "references": [
-      "https://cert.vde.com/en/advisories/VDE-2025-022",
-      "https://api-it.codesys.com/fileadmin/user_upload/CODESYS_Group/Ecosystem/Up-to-Date/Security/Security-Advisories/Advisory2025-04_CDS-91316.pdf"
-    ]
+      "https://github.com/OPCFoundation/OPC-SecurityAdvisories/tree/latest/csaf/2025/002"
+    ],
+    "description": "Security Update for the OPC UA Specification",
+    "source": "OPCFoundation/OPC-SecurityAdvisories (CSAF)"
   }
 ]

@@ -58,14 +58,14 @@ def safe_disconnect(client):
 
 def sr(node):
     try:
-        return node.get_value()
+        return node.read_value()
     except Exception:
         return None
 
 
 def sn(node):
     try:
-        return node.get_browse_name().Name
+        return node.read_browse_name().Name
     except Exception:
         return "?"
 
@@ -77,15 +77,15 @@ def sc(node):
         return []
 
 
-def generate_self_signed_cert(uri="urn:OpcPEAS", out_dir=None):
+def generate_self_signed_cert(uri="urn:UARecon", out_dir=None):
     created_tmp = False
     if out_dir is None:
-        out_dir = tempfile.mkdtemp(prefix="opcpeas_")
+        out_dir = tempfile.mkdtemp(prefix="uarecon_")
         created_tmp = True
 
-    cert_path = os.path.join(out_dir, "opcpeas_cert.pem")
-    key_path = os.path.join(out_dir, "opcpeas_key.pem")
-    cnf_path = os.path.join(out_dir, "opcpeas.cnf")
+    cert_path = os.path.join(out_dir, "uarecon_cert.pem")
+    key_path = os.path.join(out_dir, "uarecon_key.pem")
+    cnf_path = os.path.join(out_dir, "uarecon.cnf")
 
     with open(cnf_path, "w") as f:
         f.write(
@@ -94,7 +94,7 @@ distinguished_name = req_dn
 x509_extensions = v3_req
 prompt = no
 [req_dn]
-CN = OpcPEAS Scanner
+CN = UARecon Scanner
 O = Pentest
 [v3_req]
 subjectAltName = URI:{uri}
@@ -125,6 +125,82 @@ subjectAltName = URI:{uri}
     if result.returncode != 0:
         return None, None, cnf_path, out_dir, created_tmp
 
+    return cert_path, key_path, cnf_path, out_dir, created_tmp
+
+
+def generate_expired_cert(uri="urn:UARecon", out_dir=None):
+    created_tmp = False
+    if out_dir is None:
+        out_dir = tempfile.mkdtemp(prefix="uarecon_")
+        created_tmp = True
+
+    cert_path = os.path.join(out_dir, "uarecon_expired_cert.pem")
+    key_path = os.path.join(out_dir, "uarecon_expired_key.pem")
+    cnf_path = os.path.join(out_dir, "uarecon_expired.cnf")
+
+    with open(cnf_path, "w") as f:
+        f.write(
+            f"""[req]
+distinguished_name = req_dn
+x509_extensions = v3_req
+prompt = no
+[req_dn]
+CN = UARecon Expired
+O = Pentest
+[v3_req]
+subjectAltName = URI:{uri}
+"""
+        )
+
+    result = subprocess.run(
+        [
+            "openssl", "req", "-x509", "-newkey", "rsa:2048",
+            "-keyout", key_path, "-out", cert_path,
+            "-days", "0", "-nodes", "-config", cnf_path,
+        ],
+        capture_output=True, text=True,
+    )
+
+    if result.returncode != 0:
+        return None, None, cnf_path, out_dir, created_tmp
+    return cert_path, key_path, cnf_path, out_dir, created_tmp
+
+
+def generate_wrong_uri_cert(out_dir=None):
+    created_tmp = False
+    if out_dir is None:
+        out_dir = tempfile.mkdtemp(prefix="uarecon_")
+        created_tmp = True
+
+    cert_path = os.path.join(out_dir, "uarecon_wronguri_cert.pem")
+    key_path = os.path.join(out_dir, "uarecon_wronguri_key.pem")
+    cnf_path = os.path.join(out_dir, "uarecon_wronguri.cnf")
+
+    with open(cnf_path, "w") as f:
+        f.write(
+            """[req]
+distinguished_name = req_dn
+x509_extensions = v3_req
+prompt = no
+[req_dn]
+CN = UARecon WrongURI
+O = Pentest
+[v3_req]
+subjectAltName = URI:urn:FAKE:InvalidApplication:NotReal
+"""
+        )
+
+    result = subprocess.run(
+        [
+            "openssl", "req", "-x509", "-newkey", "rsa:2048",
+            "-keyout", key_path, "-out", cert_path,
+            "-days", "1", "-nodes", "-config", cnf_path,
+        ],
+        capture_output=True, text=True,
+    )
+
+    if result.returncode != 0:
+        return None, None, cnf_path, out_dir, created_tmp
     return cert_path, key_path, cnf_path, out_dir, created_tmp
 
 
