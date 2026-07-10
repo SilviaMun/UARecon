@@ -5,7 +5,7 @@ UARecon is an OPC UA security assessment toolkit for reconnaissance, security po
 ## Setup
 
 ```bash
-git clone https://github.com/SilviaMun/uarecon.git
+git clone https://github.com/SilviaMun/UArecon.git
 cd uarecon
 python3 -m venv venv
 source venv/bin/activate
