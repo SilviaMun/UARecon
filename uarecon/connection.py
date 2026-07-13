@@ -72,7 +72,12 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
             client.set_security_string(f"{policy},{mode},{cert},{key}")
             client.connect()
             good(f"Connected with provided certificate ({policy}/{mode})")
-            return client, findings
+            return client, findings, {
+                "strategy": "provided-certificate",
+                "policy": policy, "mode": mode,
+                "user_auth": "username-password",
+                "cert_type": "provided",
+            }
         except Exception as e:
             warn(f"Provided cert failed: {classify_error(e)}")
             safe_disconnect(client)
@@ -102,7 +107,12 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
                 "mode": "None",
             },
         })
-        return client, findings
+        return client, findings, {
+            "strategy": "no-security",
+            "policy": "None", "mode": "None",
+            "user_auth": "username-password",
+            "cert_type": "none",
+        }
     except Exception as e:
         good(f"SecurityPolicy None rejected ({classify_error(e)})")
         safe_disconnect(client)
@@ -112,7 +122,7 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
     auto_cert, auto_key, cnf_path, out_dir, created_tmp = generate_self_signed_cert(uri)
     if not auto_cert:
         bad("Failed to generate certificate (is openssl installed?)")
-        return None, findings
+        return None, findings, None
 
     endpoint_combos = get_endpoint_combinations(target, timeout=timeout)
     preferred = [(p, m) for (p, m) in endpoint_combos if p != "None" and m != "None"]
@@ -134,7 +144,7 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
             client.connect()
             warn(f"Connected using auto-generated self-signed cert ({pol}/{mod})")
             findings.append({
-                "title": "Auto-Generated Client Certificate Accepted",
+                "title": "Auto-Generated Client Certificate Accepted During Enumeration",
                 "severity": "Info",
                 "category": "Cryptographic Failures",
                 "description": f"Server accepted a session using an auto-generated self-signed client certificate ({pol}/{mod}). "
@@ -153,7 +163,12 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
                 },
             })
             cleanup_temp_artifacts(auto_cert, auto_key, cnf_path, out_dir, remove_dir=created_tmp)
-            return client, findings
+            return client, findings, {
+                "strategy": "auto-generated-certificate",
+                "policy": pol, "mode": mod,
+                "user_auth": "username-password",
+                "cert_type": "auto-generated-self-signed",
+            }
         except Exception as e:
             err = classify_error(e)
             last_errors.append(f"{pol}/{mod}: {err}")
@@ -180,7 +195,7 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
                 })
                 safe_disconnect(client)
                 cleanup_temp_artifacts(auto_cert, auto_key, cnf_path, out_dir, remove_dir=created_tmp)
-                return None, findings
+                return None, findings, None
 
             warn(f"{pol}/{mod} failed: {err}")
             safe_disconnect(client)
@@ -205,4 +220,4 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
             },
         })
 
-    return None, findings
+    return None, findings, None

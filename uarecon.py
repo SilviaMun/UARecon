@@ -26,7 +26,9 @@ from uarecon.enumeration import (
 from uarecon.cve import load_cve_db, list_all_cves, check_cves
 from uarecon.security_checks import (
     check_anonymous_access, check_default_credentials, check_bruteforce,
+    check_provided_credentials,
     run_security_checks, CHECK_CATALOG, run_check_by_slug,
+    FAMILY_ALIASES, FAMILY_ALIAS_REVERSE, PRE_AUTH_SLUGS, FAMILY_AUTHENTICATION,
 )
 
 
@@ -67,6 +69,10 @@ def parse_args():
                    help="Production-safe mode: skip destructive checks (write, method calls, resource abuse)")
     p.add_argument("--check", nargs="+", metavar="SLUG",
                    help="Run only specific check(s) by slug (see --list-checks)")
+    p.add_argument("--family", nargs="+", metavar="FAMILY",
+                   choices=list(FAMILY_ALIASES.keys()),
+                   help="Run only checks from specified families: "
+                        + ", ".join(sorted(FAMILY_ALIASES.keys())))
     p.add_argument("--list-checks", action="store_true",
                    help="Show all available security checks and exit")
     p.add_argument("--wordlist", metavar="FILE",
@@ -93,12 +99,33 @@ def main():
     if args.list_checks:
         if not args.quiet:
             banner()
-        print(f"  {'Slug':<20} {'Check':<35} {'Category':<25} {'Type'}")
-        print(f"  {'─'*20} {'─'*35} {'─'*25} {'─'*12}")
-        for slug, label, cat, destructive, _req in CHECK_CATALOG:
-            ctype = "destructive" if destructive else "safe"
-            print(f"  {slug:<20} {label:<35} {cat:<25} {ctype}")
-        print(f"\n  {len(CHECK_CATALOG)} checks total")
+        selected_families = None
+        if args.family:
+            selected_families = {FAMILY_ALIASES[a] for a in args.family}
+        current_family = None
+        shown = 0
+        for slug, label, cat, testing_only, _req, family in CHECK_CATALOG:
+            if selected_families and family not in selected_families:
+                continue
+            if family != current_family:
+                current_family = family
+                alias = FAMILY_ALIAS_REVERSE.get(family, "")
+                header = f"{family}  (--family {alias})" if alias else family
+                print(f"\n  [{header}]")
+            mode = "testing" if testing_only else "prod"
+            print(f"    {slug:<20} {label:<35} {mode}")
+            shown += 1
+        total = shown
+        prod_count = sum(1 for s, _, _, t, _, f in CHECK_CATALOG
+                         if not t and (not selected_families or f in selected_families))
+        test_count = sum(1 for s, _, _, t, _, f in CHECK_CATALOG
+                         if t and (not selected_families or f in selected_families))
+        filter_note = ""
+        if selected_families:
+            aliases = [FAMILY_ALIAS_REVERSE.get(f, f) for f in sorted(selected_families)]
+            filter_note = f" (filtered: {', '.join(aliases)})"
+        print(f"\n  {total} checks shown{filter_note} "
+              f"({prod_count} prod-safe, {test_count} testing-only)")
         return
 
     if args.list_cves:
@@ -106,6 +133,10 @@ def main():
             banner()
         list_all_cves(cve_db)
         return
+
+    if args.check and args.family:
+        print("Error: --check and --family are mutually exclusive")
+        sys.exit(1)
 
     if not args.target:
         print("Error: -t/--target is required")
@@ -115,6 +146,11 @@ def main():
         banner()
 
     delay = args.delay if args.delay is not None else (1.0 if args.prod else 0)
+
+    # Resolve --family aliases to full family names
+    selected_families = None
+    if args.family:
+        selected_families = {FAMILY_ALIASES[a] for a in args.family}
 
     report_data = reset_report()
     report_data["target"] = args.target
@@ -139,8 +175,16 @@ def main():
 
         needs_endpoints = any(catalog_map[s][4] == "endpoints" for s in args.check)
         needs_client = any(catalog_map[s][4] == "client" for s in args.check)
+        needs_creds = "provided-creds" in args.check
 
-        if needs_endpoints:
+        if needs_creds:
+            if not args.user or not args.password:
+                print("Error: -u/--user and -p/--password required for provided-creds check")
+                sys.exit(1)
+            report_data["_user"] = args.user
+            report_data["_password"] = args.password
+
+        if needs_endpoints or needs_creds:
             enum_endpoints(args.target, report_data, args.timeout)
 
         client = None
@@ -150,27 +194,29 @@ def main():
                     print("Error: -u/--user and -p/--password required for this check")
                     sys.exit(1)
                 phase("CONNECTING")
-                client, conn_findings = try_connect(
+                client, conn_findings, conn_ctx = try_connect(
                     args.target, args.user, args.password,
                     args.cert, args.key, args.uri,
                     args.policy, args.mode, args.timeout,
                 )
                 report_data["findings"].extend(conn_findings)
+                if conn_ctx:
+                    report_data["connection_context"] = conn_ctx
                 if client is None:
                     bad("Cannot connect to server")
                     sys.exit(1)
 
             phase("SECURITY ASSESSMENT")
             for i, slug in enumerate(args.check):
-                _, _, _, destructive, _ = catalog_map[slug]
-                if destructive and args.prod:
-                    info(f"Skipping {slug} (destructive, --prod mode)")
+                _, _, _, testing_only, _, _ = catalog_map[slug]
+                if testing_only and args.prod:
+                    info(f"Skipping {slug} (testing-only, --prod mode)")
                     continue
                 if i > 0 and delay > 0:
                     time.sleep(delay)
                 run_check_by_slug(slug, args.target, client, report_data, args.timeout)
 
-            vuln_recap(report_data["findings"], target=args.target)
+            vuln_recap(report_data["findings"], target=args.target, report_data=report_data)
             save_report(report_data, args.output)
         finally:
             if client:
@@ -186,7 +232,7 @@ def main():
         phase("BRUTE-FORCE ATTACK")
         check_bruteforce(args.target, report_data, args.wordlist, args.passlist,
                          args.timeout, delay=delay)
-        vuln_recap(report_data["findings"], target=args.target)
+        vuln_recap(report_data["findings"], target=args.target, report_data=report_data)
         save_report(report_data, args.output)
         good("Done")
         return
@@ -204,13 +250,28 @@ def main():
 
     info(f"User: {args.user}")
 
+    # Store credentials in report_data for pre-auth check dispatch
+    report_data["_user"] = args.user
+    report_data["_password"] = args.password
+
     if not args.cve_only and not args.deep_only and not args.sessions_only:
         phase("PRE-AUTH RECONNAISSANCE")
         if not args.skip_endpoints:
             enum_endpoints(args.target, report_data, args.timeout)
-        if not args.skip_security_checks:
+        # Pre-auth checks belong to authentication_posture family
+        run_preauth = (not args.skip_security_checks
+                       and (not selected_families
+                            or FAMILY_AUTHENTICATION in selected_families))
+        if run_preauth:
             check_anonymous_access(args.target, report_data, args.timeout)
-            check_default_credentials(args.target, report_data, args.timeout)
+            # Skip default-creds when the user already provided valid credentials
+            if not args.user:
+                check_default_credentials(args.target, report_data, args.timeout)
+            else:
+                info("  [SKIP] default-creds (credentials provided via -u/-p)")
+            if args.user and args.password:
+                check_provided_credentials(args.target, args.user, args.password,
+                                           report_data, args.timeout)
         if args.wordlist and args.passlist:
             check_bruteforce(args.target, report_data, args.wordlist, args.passlist,
                              args.timeout, delay=delay)
@@ -220,7 +281,7 @@ def main():
     report_saved = False
 
     try:
-        client, conn_findings = try_connect(
+        client, conn_findings, conn_ctx = try_connect(
             args.target,
             args.user,
             args.password,
@@ -233,6 +294,10 @@ def main():
         )
 
         report_data["findings"].extend(conn_findings)
+        if conn_ctx:
+            report_data["connection_context"] = conn_ctx
+            info(f"Enumeration context: {conn_ctx['strategy']} "
+                 f"({conn_ctx['policy']}/{conn_ctx['mode']})")
 
         if client is None:
             bad("Cannot connect to server")
@@ -279,12 +344,13 @@ def main():
 
         if not args.skip_security_checks:
             phase("SECURITY ASSESSMENT")
-            run_security_checks(args.target, client, report_data, args.timeout, safe=args.prod, delay=delay)
+            run_security_checks(args.target, client, report_data, args.timeout,
+                                safe=args.prod, delay=delay, families=selected_families)
 
         if not args.skip_cve:
             check_cves(client, report_data, cve_db, include_browsed_nodes=not args.skip_deep)
 
-        vuln_recap(report_data["findings"], target=args.target)
+        vuln_recap(report_data["findings"], target=args.target, report_data=report_data)
 
         save_report(report_data, args.output)
         report_saved = True
@@ -306,5 +372,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # Flush stdout/stderr before forced exit (os._exit skips buffer flush)
+    sys.stdout.flush()
+    sys.stderr.flush()
     # asyncua sync ThreadLoop can hang on exit; force clean shutdown
     os._exit(0)

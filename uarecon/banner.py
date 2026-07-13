@@ -58,7 +58,7 @@ def banner():
     print()
     print(_gradient(art))
     print(f"  {BLUE}v{__version__} — OPC UA Security Assessment Toolkit{RESET}")
-    print(f"              {MAGENTA}@SilviaMun (Chef.S){RESET}")
+    print(f"              {MAGENTA}@Chef.S{RESET}")
     print()
 
 
@@ -97,49 +97,73 @@ def tag(category):
 
 
 
-def vuln_recap(findings, target=None):
+def vuln_recap(findings, target=None, report_data=None):
     vulns = [f for f in findings if f.get("category")]
     if not vulns:
         return
 
+    actionable = [f for f in vulns if not f.get("observation")]
+    observations = [f for f in vulns if f.get("observation")]
+
     phase_fn = globals().get("phase")
+
+    # --- Connection context ---
+    if report_data and report_data.get("connection_context"):
+        ctx = report_data["connection_context"]
+        if phase_fn:
+            phase_fn("SCAN CONTEXT")
+        print(f"  {BLUE}Connection strategy:{RESET} {ctx.get('strategy', '?')}")
+        print(f"  {BLUE}Security:{RESET} {ctx.get('policy', '?')}/{ctx.get('mode', '?')}")
+        print(f"  {BLUE}Client certificate:{RESET} {ctx.get('cert_type', '?')}")
+        print(f"  {BLUE}User authentication:{RESET} {ctx.get('user_auth', '?')}")
+
+    # --- Actionable findings ---
     if phase_fn:
-        phase_fn("VULNERABILITY SUMMARY")
+        phase_fn("FINDINGS")
 
-    by_cat = {}
-    for f in vulns:
-        cat = f["category"]
-        by_cat.setdefault(cat, []).append(f)
+    if not actionable:
+        print(f"\n  {GREEN}No actionable findings.{RESET}")
+    else:
+        by_cat = {}
+        for f in actionable:
+            by_cat.setdefault(f["category"], []).append(f)
 
-    for cat, items in sorted(by_cat.items()):
-        print(f"\n  {MAGENTA}{BOLD}{cat}{RESET}")
-        for f in items:
-            sev = f.get("severity", "")
+        for cat, items in sorted(by_cat.items()):
+            print(f"\n  {MAGENTA}{BOLD}{cat}{RESET}")
+            for f in items:
+                sev = f.get("severity", "")
+                title = f.get("title", "")
+                if sev == "Critical":
+                    print(f"    {RED}{BOLD}[{sev}]{RESET} {title}")
+                elif sev == "High":
+                    print(f"    {RED}[{sev}]{RESET} {title}")
+                elif sev == "Medium":
+                    print(f"    {YELLOW}[{sev}]{RESET} {title}")
+                else:
+                    print(f"    {BLUE}[{sev}]{RESET} {title}")
+                desc = f.get("description", "")
+                if desc:
+                    short = desc if len(desc) <= 120 else desc[:117] + "..."
+                    print(f"      {short}")
+                slug = f.get("check", "")
+                if slug and target:
+                    print(f"      {CYAN}⟶ python3 uarecon.py -t {target} --check {slug}{RESET}")
+
+    # --- Observations (muted) ---
+    if observations:
+        print(f"\n  {BLUE}{BOLD}── OBSERVATIONS ({len(observations)}) ──{RESET}")
+        for f in observations:
             title = f.get("title", "")
-            if sev in ("Critical",):
-                print(f"    {RED}{BOLD}[{sev}]{RESET} {title}")
-            elif sev in ("High",):
-                print(f"    {RED}[{sev}]{RESET} {title}")
-            elif sev in ("Medium",):
-                print(f"    {YELLOW}[{sev}]{RESET} {title}")
-            else:
-                print(f"    {BLUE}[{sev}]{RESET} {title}")
-            desc = f.get("description", "")
-            if desc:
-                short = desc if len(desc) <= 120 else desc[:117] + "..."
-                print(f"      {short}")
+            print(f"    {BLUE}[Info]{RESET} {title}")
 
-            slug = f.get("check", "")
-            if slug and target:
-                print(f"      {CYAN}⟶ python3 uarecon.py -t {target} --check {slug}{RESET}")
-
-    total = len(vulns)
-    crits = sum(1 for f in vulns if f.get("severity") == "Critical")
-    highs = sum(1 for f in vulns if f.get("severity") == "High")
-    meds = sum(1 for f in vulns if f.get("severity") == "Medium")
-    lows = sum(1 for f in vulns if f.get("severity") in ("Low", "Info"))
-    print(f"\n  {BOLD}Total: {total} finding(s) — "
+    # --- Totals ---
+    crits = sum(1 for f in actionable if f.get("severity") == "Critical")
+    highs = sum(1 for f in actionable if f.get("severity") == "High")
+    meds = sum(1 for f in actionable if f.get("severity") == "Medium")
+    lows = sum(1 for f in actionable if f.get("severity") in ("Low", "Info"))
+    print(f"\n  {BOLD}Findings: {len(actionable)} — "
           f"{RED}{crits} Critical{RESET}{BOLD}, "
           f"{RED}{highs} High{RESET}{BOLD}, "
           f"{YELLOW}{meds} Medium{RESET}{BOLD}, "
-          f"{BLUE}{lows} Low/Info{RESET}")
+          f"{BLUE}{lows} Low/Info{RESET}{BOLD} "
+          f"| Observations: {len(observations)}{RESET}")

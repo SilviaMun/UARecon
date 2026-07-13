@@ -67,11 +67,20 @@ def enum_endpoints(target, report_data, timeout=5):
             mode_str = normalize_mode(ep.SecurityMode)
             policy = normalize_policy(ep.SecurityPolicyUri)
 
+            # Capture ApplicationUri from the server description for identity validation
+            app_uri = ""
+            try:
+                app_uri = str(ep.Server.ApplicationUri or "")
+            except Exception:
+                pass
+
             ep_info = {
                 "url": str(ep.EndpointUrl),
                 "mode": mode_str,
                 "policy": policy,
-                "tokens": []
+                "tokens": [],
+                "token_details": [],
+                "application_uri": app_uri,
             }
 
             if policy == "None" and mode_str == "None":
@@ -84,6 +93,19 @@ def enum_endpoints(target, report_data, timeout=5):
             for token in ep.UserIdentityTokens:
                 tt = token_type_to_str(token.TokenType)
                 ep_info["tokens"].append(tt)
+
+                # Capture per-token SecurityPolicyUri for detailed user-token analysis
+                token_policy_uri = ""
+                try:
+                    token_policy_uri = str(token.SecurityPolicyUri or "")
+                except Exception:
+                    pass
+                ep_info["token_details"].append({
+                    "type": tt,
+                    "security_policy_uri": token_policy_uri,
+                    "policy_id": str(getattr(token, "PolicyId", "") or ""),
+                })
+
                 if tt == "Anonymous":
                     warn("  Token: Anonymous")
                 elif tt == "UserName":
@@ -345,6 +367,7 @@ def enum_objects_deep(client, report_data, max_depth=8):
                     pass
 
                 entry = {
+                    "node_id": nid,
                     "path": current_path,
                     "value": str(val)[:200] if val is not None else None,
                     "access": access,

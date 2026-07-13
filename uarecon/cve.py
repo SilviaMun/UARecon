@@ -155,27 +155,33 @@ _CVE_SEVERITY_FN = {
 }
 
 
-def _print_cve(m, status_label=None):
+def _print_cve(m, status_label=None, muted=False):
     sev = m.get("severity", "?")
-    fn = _CVE_SEVERITY_FN.get(sev, info)
+    if muted:
+        fn = info
+    else:
+        fn = _CVE_SEVERITY_FN.get(sev, info)
     label = f" ({status_label})" if status_label else ""
     fn(f"[{sev}] {m.get('cve')}: {m.get('title')}{label}")
-    print(f"         Product: {m.get('product')}")
-    print(f"         Affected: {m.get('affected')}")
-    if m.get("fixed"):
-        fixed_ver = m.get("fixed_version")
-        fixed_text = m["fixed"]
-        if fixed_ver:
-            print(f"         Fixed in: {fixed_ver}")
-        else:
-            print(f"         Fix: {fixed_text}")
-    print(f"         CVSS: {format_score(m.get('cvss_score'))}")
-    if m.get("cvss_vector"):
-        print(f"         Vector: {m.get('cvss_vector')}")
-    print(f"         CWE: {format_cwe_list(m.get('cwe', []))}")
-    ref = best_reference(m.get("references", []))
-    if ref:
-        print(f"         Ref: {ref}")
+    if not muted:
+        print(f"         Product: {m.get('product')}")
+        print(f"         Affected: {m.get('affected')}")
+        if m.get("fixed"):
+            fixed_ver = m.get("fixed_version")
+            fixed_text = m["fixed"]
+            if fixed_ver:
+                print(f"         Fixed in: {fixed_ver}")
+            else:
+                print(f"         Fix: {fixed_text}")
+        print(f"         CVSS: {format_score(m.get('cvss_score'))}")
+        if m.get("cvss_vector"):
+            print(f"         Vector: {m.get('cvss_vector')}")
+        print(f"         CWE: {format_cwe_list(m.get('cwe', []))}")
+        ref = best_reference(m.get("references", []))
+        if ref:
+            print(f"         Ref: {ref}")
+    else:
+        print(f"         CVSS: {format_score(m.get('cvss_score'))} | {m.get('product', '?')}")
 
 
 def check_cves(client, report_data, db_entries, include_browsed_nodes=True):
@@ -263,9 +269,10 @@ def check_cves(client, report_data, db_entries, include_browsed_nodes=True):
         good("No possible matches for detected product stack")
 
     if generic_risks:
-        print(f"\n  ── GENERIC OPC UA / ECOSYSTEM RISKS ({len(generic_risks)}) ──")
+        print(f"\n  ── PROTOCOL-LEVEL ADVISORY REFERENCES ({len(generic_risks)}) ──")
+        info("These are generic OPC UA ecosystem advisories, not product-specific matches.")
         for m in generic_risks:
-            _print_cve(m, status_label="generic/spec/protocol-level")
+            _print_cve(m, status_label="reference only", muted=True)
 
     all_matches = confirmed + possible + generic_risks
     print("\n  ── CVE Summary ──")
@@ -279,7 +286,7 @@ def check_cves(client, report_data, db_entries, include_browsed_nodes=True):
     else:
         good("No possible product-specific matches")
 
-    info(f"Generic risks: {len(generic_risks)}")
+    info(f"Protocol-level references: {len(generic_risks)}")
     info(f"Total in database: {len(db_entries)}")
 
     report_data["cve_matches"] = all_matches

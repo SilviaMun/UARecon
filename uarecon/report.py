@@ -87,21 +87,23 @@ def _build_html(rd):
     si = rd.get("server_info", {})
     vi = rd.get("vendor_info", {})
 
-    findings = [f for f in rd.get("findings", []) if f.get("category")]
-    findings.sort(key=lambda f: SEV_ORDER.get(f.get("severity", "Unknown"), 5))
+    all_findings = [f for f in rd.get("findings", []) if f.get("category")]
+    actionable = [f for f in all_findings if not f.get("observation")]
+    observations = [f for f in all_findings if f.get("observation")]
+    actionable.sort(key=lambda f: SEV_ORDER.get(f.get("severity", "Unknown"), 5))
 
     by_cat = {}
-    for f in findings:
+    for f in actionable:
         by_cat.setdefault(f.get("category", "Other"), []).append(f)
 
     cves = rd.get("cve_matches", [])
     endpoints = rd.get("endpoints", [])
 
     counts = {}
-    for f in findings:
+    for f in actionable:
         s = f.get("severity", "Unknown")
         counts[s] = counts.get(s, 0) + 1
-    total_findings = len(findings)
+    total_findings = len(actionable)
 
     risk_label, risk_color = _risk_label(counts)
     donut = _donut_css(counts, total_findings)
@@ -113,6 +115,20 @@ def _build_html(rd):
     product = escape(si.get("ProductName", vi.get("ProductName", "Unknown")))
     version = escape(si.get("SoftwareVersion", vi.get("SoftwareVersion", "")))
     manufacturer = escape(si.get("ManufacturerName", vi.get("ManufacturerName", "")))
+
+    # --- connection context ---
+    ctx = rd.get("connection_context")
+    ctx_html = ""
+    if ctx:
+        ctx_html = (
+            '<div class="section-block"><h2>&#x1f517; Scan Context</h2>'
+            '<div class="info-grid">'
+            f'<div class="info-item"><div class="info-key">Strategy</div><div class="info-val">{escape(ctx.get("strategy", "?"))}</div></div>'
+            f'<div class="info-item"><div class="info-key">Security</div><div class="info-val">{escape(ctx.get("policy", "?"))}/{escape(ctx.get("mode", "?"))}</div></div>'
+            f'<div class="info-item"><div class="info-key">Client Certificate</div><div class="info-val">{escape(ctx.get("cert_type", "?"))}</div></div>'
+            f'<div class="info-item"><div class="info-key">User Auth</div><div class="info-val">{escape(ctx.get("user_auth", "?"))}</div></div>'
+            '</div></div>'
+        )
 
     # --- stat cards ---
     stats_cards = ""
@@ -153,6 +169,30 @@ def _build_html(rd):
         findings_html += '</div></div>'
         cat_idx += 1
 
+    # --- observations (collapsed by default) ---
+    obs_html = ""
+    if observations:
+        obs_idx = cat_idx
+        obs_html = f'''<div class="section-block"><h2>&#x1f4cb; Observations ({len(observations)})</h2>
+<div class="cat-block">
+<div class="cat-header" onclick="toggleCat({obs_idx})">
+<span class="cat-icon">&#x2139;</span>
+<span class="cat-title">Informational observations</span>
+<span class="cat-count">{len(observations)} item{"s" if len(observations) != 1 else ""}</span>
+<span class="cat-arrow" id="arrow-{obs_idx}">&#x25BC;</span>
+</div>
+<div class="cat-body" id="cat-{obs_idx}">'''
+        for f in observations:
+            title = escape(f.get("title", ""))
+            desc = escape(f.get("description", ""))
+            cat = escape(f.get("category", ""))
+            obs_html += f'''<div class="finding" style="border-left:3px solid #6b7280">
+<div class="finding-header">{_sev_badge("Info")} <strong>{title}</strong> <span style="font-size:.75rem;color:#64748b">({cat})</span></div>
+<p>{desc}</p>
+</div>'''
+        obs_html += '</div></div></div>'
+        cat_idx += 1
+
     # --- endpoints ---
     ep_html = ""
     if endpoints:
@@ -173,14 +213,31 @@ def _build_html(rd):
     # --- CVEs ---
     cve_html = ""
     if cves:
-        cve_html = '<div class="section-block"><h2>&#x1f6a8; CVE Matches</h2><div class="table-wrap"><table><thead><tr><th>CVE</th><th>Severity</th><th>CVSS</th><th>Description</th></tr></thead><tbody>'
-        for c in cves:
-            cve_id = escape(c.get("cve", ""))
-            sev = c.get("severity", "Unknown")
-            score = c.get("cvss_score")
-            score_str = f"{score}" if score else "-"
-            title = escape(c.get("title", "")[:120])
-            cve_html += f'<tr><td><strong>{cve_id}</strong></td><td>{_sev_badge(sev)}</td><td>{score_str}</td><td>{title}</td></tr>'
+        confirmed_cves = [c for c in cves if c.get("match_status") == "confirmed"]
+        possible_cves = [c for c in cves if c.get("match_status") == "possible"]
+        generic_cves = [c for c in cves if c.get("match_status") == "generic"]
+        other_cves = [c for c in cves if c.get("match_status") not in ("confirmed", "possible", "generic")]
+
+        def _cve_rows(items, status_label):
+            rows = ""
+            for c in items:
+                cve_id = escape(c.get("cve", ""))
+                sev = c.get("severity", "Unknown")
+                score = c.get("cvss_score")
+                score_str = f"{score}" if score else "-"
+                title = escape(c.get("title", "")[:120])
+                status = escape(status_label)
+                rows += f'<tr><td><strong>{cve_id}</strong></td><td>{_sev_badge(sev)}</td><td>{score_str}</td><td>{status}</td><td>{title}</td></tr>'
+            return rows
+
+        cve_html = '<div class="section-block"><h2>&#x1f6a8; CVE Database</h2>'
+        cve_html += '<div class="table-wrap"><table><thead><tr><th>CVE</th><th>Severity</th><th>CVSS</th><th>Match</th><th>Description</th></tr></thead><tbody>'
+        cve_html += _cve_rows(confirmed_cves, "Confirmed")
+        cve_html += _cve_rows(possible_cves, "Possible")
+        cve_html += _cve_rows(other_cves, "Unknown")
+        if generic_cves:
+            cve_html += f'<tr><td colspan="5" style="text-align:center;color:#64748b;font-size:.8rem;padding:12px">Protocol-level advisory references ({len(generic_cves)})</td></tr>'
+            cve_html += _cve_rows(generic_cves, "Reference")
         cve_html += '</tbody></table></div></div>'
 
     # --- server info ---
@@ -327,13 +384,17 @@ footer a{{color:var(--accent);text-decoration:none}}
 <div class="kpi"><div class="kpi-num">{n_writable}</div><div class="kpi-label">Writable</div></div>
 <div class="kpi"><div class="kpi-num">{n_methods}</div><div class="kpi-label">Methods</div></div>
 <div class="kpi"><div class="kpi-num">{len(cves)}</div><div class="kpi-label">CVEs</div></div>
+<div class="kpi"><div class="kpi-num">{len(observations)}</div><div class="kpi-label">Observations</div></div>
 </div>
+
+{ctx_html}
 
 <div class="section-block">
 <h2>&#x1f50d; Findings by Category</h2>
-{findings_html}
+{findings_html if actionable else '<p style="color:#64748b">No actionable findings.</p>'}
 </div>
 
+{obs_html}
 {ep_html}
 {cve_html}
 {server_html}
