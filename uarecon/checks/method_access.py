@@ -16,7 +16,7 @@ This guarantees no method is ever successfully invoked during the scan.
 
 from asyncua import ua
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import bad, warn, good, info, section, tag
 from ..helpers import sc, sn
 
@@ -145,63 +145,44 @@ def check_method_access_control(client, report_data):
     if executable_zero_arg:
         bad(f"{len(executable_zero_arg)} zero-argument method(s) are executable")
         tag("Broken Access Control")
-        add_finding(
-            report_data,
-            "Executable Zero-Argument Methods (Not Called)",
-            "High",
-            "Broken Access Control",
-            f"{len(executable_zero_arg)} method(s) with zero input arguments are marked "
-            f"as UserExecutable by the server: {', '.join(executable_zero_arg[:5])}. "
-            f"These were NOT invoked to avoid triggering actions. Zero-argument methods "
-            f"are often action triggers (Start, Stop, Reset). Manual review is required.",
-            check="method-access",
-            confidence="high",
-            verification_status="access-level-read",
-            safe_check=True,
-            destructive=False,
-            evidence={
-                "executable_zero_arg": executable_zero_arg[:20],
-                "tested": tested,
-            },
-        )
+        emit(report_data, "executable-zero-arg",
+             f"{len(executable_zero_arg)} method(s) with zero input arguments are marked "
+             f"as UserExecutable by the server: {', '.join(executable_zero_arg[:5])}. "
+             f"These were NOT invoked to avoid triggering actions. Zero-argument methods "
+             f"are often action triggers (Start, Stop, Reset). Manual review is required.",
+             confidence="high",
+             verification_status="access-level-read",
+             safe_check=True,
+             destructive=False,
+             evidence={
+                 "executable_zero_arg": executable_zero_arg[:20],
+                 "tested": tested,
+             })
 
     # Methods proven reachable via argument errors
     if arg_reachable:
-        level = "High" if not executable_zero_arg else None
-        if level:
-            add_finding(
-                report_data,
-                "Methods Reachable by Current Role",
-                "High",
-                "Broken Access Control",
-                f"{len(arg_reachable)} method(s) are proven reachable: the server returned "
-                f"argument errors instead of access denial when called with empty arguments: "
-                f"{', '.join(arg_reachable[:5])}. No method was actually executed.",
-                check="method-access",
-                confidence="high",
-                verification_status="confirmed-reachable",
-                safe_check=True,
-                destructive=False,
-                evidence={
-                    "argument_reachable": arg_reachable[:20],
-                    "tested": tested,
-                },
-            )
+        if not executable_zero_arg:
+            emit(report_data, "methods-reachable",
+                 f"{len(arg_reachable)} method(s) are proven reachable: the server returned "
+                 f"argument errors instead of access denial when called with empty arguments: "
+                 f"{', '.join(arg_reachable[:5])}. No method was actually executed.",
+                 confidence="high",
+                 verification_status="confirmed-reachable",
+                 safe_check=True,
+                 destructive=False,
+                 evidence={
+                     "argument_reachable": arg_reachable[:20],
+                     "tested": tested,
+                 })
         else:
-            # Already have the zero-arg finding, add reachable as observation
-            add_observation(
-                report_data,
-                "Additional Methods Proven Reachable",
-                "Broken Access Control",
-                f"{len(arg_reachable)} additional method(s) are proven reachable via "
-                f"argument errors: {', '.join(arg_reachable[:5])}.",
-                check="method-access",
-                confidence="high",
-                verification_status="confirmed-reachable",
-                safe_check=True,
-                destructive=False,
-                evidence={"argument_reachable": arg_reachable[:20]},
-            )
+            emit(report_data, "additional-methods-reachable",
+                 f"{len(arg_reachable)} additional method(s) are proven reachable via "
+                 f"argument errors: {', '.join(arg_reachable[:5])}.",
+                 confidence="high",
+                 verification_status="confirmed-reachable",
+                 safe_check=True,
+                 destructive=False,
+                 evidence={"argument_reachable": arg_reachable[:20]})
 
     if not executable_zero_arg and not arg_reachable and tested > 0:
         good(f"All {tested} tested method(s) denied access or were not executable")

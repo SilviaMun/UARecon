@@ -1,4 +1,4 @@
-from ._base import add_observation
+from ._base import emit
 from ..banner import bad, warn, good, info, section, tag
 
 
@@ -23,18 +23,13 @@ def check_session_timeout_policy(client, report_data):
             if timeout_ms > 86400000:
                 bad(f"SESSION TIMEOUT TOO LONG: {hours:.0f}h (>24h)")
                 tag("Security Misconfiguration")
-                add_observation(
-                    report_data,
-                    "Excessive Session Timeout",
-                    "Security Misconfiguration",
-                    f"Server session timeout is {hours:.0f} hours. Long timeouts increase the window for session misuse.",
-                    check="session-timeout",
-                    confidence="medium",
-                    verification_status="confirmed-read",
-                    safe_check=True,
-                    destructive=False,
-                    evidence={"timeout_ms": timeout_ms, "timeout_hours": hours},
-                )
+                emit(report_data, "excessive-session-timeout",
+                     f"Server session timeout is {hours:.0f} hours. Long timeouts increase the window for session misuse.",
+                     confidence="medium",
+                     verification_status="confirmed-read",
+                     safe_check=True,
+                     destructive=False,
+                     evidence={"timeout_ms": timeout_ms, "timeout_hours": hours})
             elif timeout_ms > 3600000:
                 warn(f"Session timeout relatively long: {hours:.1f}h")
             else:

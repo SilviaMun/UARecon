@@ -2,7 +2,7 @@ from urllib.parse import urlparse
 
 from asyncua.sync import Client
 
-from ._base import add_finding
+from ._base import emit
 from ..banner import bad, good, info, section, tag
 from ..helpers import safe_disconnect, classify_error, uniq
 
@@ -52,20 +52,14 @@ def check_endpoint_url_mismatch(target, report_data, timeout=5):
 
         if mismatched:
             hosts = uniq([h for _, h in mismatched])
-            add_finding(
-                report_data,
-                "Endpoint URL Hostname Mismatch",
-                "Medium",
-                "Security Misconfiguration",
-                f"Server advertises endpoints with internal address(es) {', '.join(hosts)} "
-                f"but was reached via {target_host}. This leaks internal network topology.",
-                check="endpoint-url",
-                confidence="high",
-                verification_status="endpoint-analysis",
-                safe_check=True,
-                destructive=False,
-                evidence={"mismatched_hosts": hosts, "target_host": target_host},
-            )
+            emit(report_data, "endpoint-hostname-mismatch",
+                 f"Server advertises endpoints with internal address(es) {', '.join(hosts)} "
+                 f"but was reached via {target_host}. This leaks internal network topology.",
+                 confidence="high",
+                 verification_status="endpoint-analysis",
+                 safe_check=True,
+                 destructive=False,
+                 evidence={"mismatched_hosts": hosts, "target_host": target_host})
         else:
             good(f"All endpoint URLs match target hostname ({target_host})")
     except Exception as e:

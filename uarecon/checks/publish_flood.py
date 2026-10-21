@@ -1,6 +1,6 @@
 from asyncua import ua
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import bad, warn, good, info, section, tag
 from ..helpers import classify_error
 
@@ -69,43 +69,32 @@ def check_publish_rate_abuse(client, report_data):
     if fast_accepted >= 2 and fastest_revised is not None and fastest_revised <= 5:
         warn(f"Server accepts very fast publish intervals ({fastest_revised}ms)")
         tag("Security Misconfiguration")
-        add_finding(
-            report_data,
-            "Fast Publish Interval Accepted (Network Flood Risk)",
-            "Medium",
-            "Security Misconfiguration",
-            f"Server accepted publish intervals as low as {fastest_revised}ms without meaningful revision. "
-            f"Combined with monitored items on high-frequency variables, this can generate sustained network "
-            f"flooding. Servers should enforce a minimum publishing interval (typically >= 100ms).",
-            check="publish-flood",
-            confidence="medium",
-            verification_status="confirmed-read",
-            safe_check=False,
-            destructive=False,
-            evidence={
-                "fastest_revised_ms": fastest_revised,
-                "fast_intervals_accepted": fast_accepted,
-                "tested_intervals_ms": test_intervals,
-            },
-        )
+        emit(report_data, "fast-publish-flood",
+             f"Server accepted publish intervals as low as {fastest_revised}ms without meaningful revision. "
+             f"Combined with monitored items on high-frequency variables, this can generate sustained network "
+             f"flooding. Servers should enforce a minimum publishing interval (typically >= 100ms).",
+             confidence="medium",
+             verification_status="confirmed-read",
+             safe_check=False,
+             destructive=False,
+             evidence={
+                 "fastest_revised_ms": fastest_revised,
+                 "fast_intervals_accepted": fast_accepted,
+                 "tested_intervals_ms": test_intervals,
+             })
     elif fast_accepted >= 1 and fastest_revised is not None and fastest_revised <= 10:
         warn(f"Server accepts fast publish interval ({fastest_revised}ms)")
-        add_observation(
-            report_data,
-            "Fast Publish Interval Accepted",
-            "Security Misconfiguration",
-            f"Server accepted a publish interval of {fastest_revised}ms. While some applications "
-            f"require fast updates, this increases DoS surface when combined with many monitored items.",
-            check="publish-flood",
-            confidence="low",
-            verification_status="capacity-observation",
-            safe_check=False,
-            destructive=False,
-            evidence={
-                "fastest_revised_ms": fastest_revised,
-                "fast_intervals_accepted": fast_accepted,
-            },
-        )
+        emit(report_data, "fast-publish-obs",
+             f"Server accepted a publish interval of {fastest_revised}ms. While some applications "
+             f"require fast updates, this increases DoS surface when combined with many monitored items.",
+             confidence="low",
+             verification_status="capacity-observation",
+             safe_check=False,
+             destructive=False,
+             evidence={
+                 "fastest_revised_ms": fastest_revised,
+                 "fast_intervals_accepted": fast_accepted,
+             })
     elif fastest_revised is not None:
         good(f"Server enforces minimum publish interval ({fastest_revised}ms)")
     else:

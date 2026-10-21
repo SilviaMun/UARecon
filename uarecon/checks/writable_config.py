@@ -12,7 +12,7 @@ If the UserAccessLevel includes Write, an attacker with the same credentials
 could disable auditing or diagnostics to cover their tracks.
 """
 
-from ._base import add_finding
+from ._base import emit
 from ..banner import bad, good, info, section, tag
 
 
@@ -47,19 +47,14 @@ def check_writable_server_config(client, report_data):
 
     if writable_found:
         labels = [w["label"] for w in writable_found]
-        add_finding(
-            report_data,
-            f"Server Config Writable: {', '.join(labels)}",
-            "High",
-            "Broken Access Control",
-            f"The current user's UserAccessLevel includes Write on critical configuration node(s): "
-            f"{', '.join(labels)}. This is based on the server-reported UserAccessLevel attribute "
-            f"(no actual write was attempted). An attacker with these credentials could modify "
-            f"server security settings.",
-            check="writable-config",
-            confidence="high",
-            verification_status="access-level-read",
-            safe_check=True,
-            destructive=False,
-            evidence=writable_found,
-        )
+        emit(report_data, "writable-server-config",
+             f"The current user's UserAccessLevel includes Write on critical configuration node(s): "
+             f"{', '.join(labels)}. This is based on the server-reported UserAccessLevel attribute "
+             f"(no actual write was attempted). An attacker with these credentials could modify "
+             f"server security settings.",
+             title=f"Server Config Writable: {', '.join(labels)}",
+             confidence="high",
+             verification_status="access-level-read",
+             safe_check=True,
+             destructive=False,
+             evidence=writable_found)

@@ -39,11 +39,12 @@ def reset_report():
 
 
 CAT_ICONS = {
-    "Broken Authentication": "&#x1f513;",
+    "Identification and Authentication Failures": "&#x1f513;",
     "Broken Access Control": "&#x1f6e1;",
     "Cryptographic Failures": "&#x1f510;",
     "Information Disclosure": "&#x1f441;",
     "Security Misconfiguration": "&#x2699;",
+    "Security Logging and Monitoring Failures": "&#x1f4cb;",
 }
 
 
@@ -137,6 +138,51 @@ def _build_html(rd):
         color = SEV_COLORS[sev]
         opacity = "" if c else ' style="opacity:.3"'
         stats_cards += f'<div class="stat-card"{opacity}><div class="stat-num" style="color:{color}">{c}</div><div class="stat-label">{sev}</div></div>'
+
+    # --- IEC 62443 posture ---
+    fr_labels = [
+        ("FR1 – Identification & Authentication", "#dc2626"),
+        ("FR2 – Use Control", "#ea580c"),
+        ("FR3 – System Integrity", "#ca8a04"),
+        ("FR4 – Data Confidentiality", "#2563eb"),
+        ("FR5 – Restricted Data Flow", "#7c3aed"),
+        ("FR6 – Timely Response to Events", "#0891b2"),
+        ("FR7 – Resource Availability", "#059669"),
+    ]
+
+    all_with_fr = actionable + observations
+    fr_posture_html = '<div class="section-block"><h2>&#x1f3db; IEC 62443 Posture</h2><div class="fr-grid">'
+    for fr_name, fr_color in fr_labels:
+        fr_items = [f for f in all_with_fr if fr_name in f.get("iec62443", [])]
+        fr_act = [f for f in fr_items if not f.get("observation")]
+        fr_confirmed = [f for f in fr_items if f.get("observation") and "No Issues Found" in f.get("title", "")]
+        fr_obs = [f for f in fr_items if f.get("observation") and "No Issues Found" not in f.get("title", "")]
+
+        if not fr_items:
+            status, status_color = "—", "#64748b"
+        elif fr_act:
+            worst_sev = min(fr_act, key=lambda f: SEV_ORDER.get(f.get("severity", "Unknown"), 5)).get("severity", "Unknown")
+            status = worst_sev.upper()
+            status_color = SEV_COLORS.get(worst_sev, "#6b7280")
+        else:
+            status, status_color = "OK", "#22c55e"
+
+        parts = []
+        if fr_act:
+            parts.append(f"{len(fr_act)} finding(s)")
+        if fr_obs:
+            parts.append(f"{len(fr_obs)} obs")
+        if fr_confirmed:
+            parts.append(f"{len(fr_confirmed)} verified")
+        detail = escape(" | ".join(parts)) if parts else "not assessed"
+
+        fr_posture_html += (
+            f'<div class="fr-card" style="border-left:4px solid {fr_color}">'
+            f'<div class="fr-header"><span class="fr-name">{escape(fr_name)}</span>'
+            f'<span class="badge" style="background:{status_color}">{status}</span></div>'
+            f'<div class="fr-detail">{detail}</div></div>'
+        )
+    fr_posture_html += '</div></div>'
 
     # --- findings by category ---
     findings_html = ""
@@ -344,6 +390,13 @@ code{{font-size:.82rem;color:var(--accent)}}
 .info-val{{font-size:.9rem;font-weight:600;word-break:break-all}}
 
 footer{{text-align:center;color:var(--muted);font-size:.75rem;margin-top:40px;padding:20px 0;border-top:1px solid var(--border)}}
+/* FR posture grid */
+.fr-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}}
+.fr-card{{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}}
+.fr-header{{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}}
+.fr-name{{font-size:.82rem;font-weight:600}}
+.fr-detail{{font-size:.72rem;color:var(--muted)}}
+
 footer a{{color:var(--accent);text-decoration:none}}
 </style>
 </head>
@@ -388,6 +441,8 @@ footer a{{color:var(--accent);text-decoration:none}}
 </div>
 
 {ctx_html}
+
+{fr_posture_html}
 
 <div class="section-block">
 <h2>&#x1f50d; Findings by Category</h2>

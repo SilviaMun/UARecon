@@ -1,4 +1,4 @@
-from ._base import add_observation
+from ._base import emit
 from ..banner import bad, info, section, tag
 from ..helpers import sc, sn
 
@@ -21,18 +21,13 @@ def check_role_permissions(client, report_data):
     if roles_found:
         bad(f"ROLES BROWSABLE: {', '.join(roles_found)}")
         tag("Information Disclosure")
-        add_observation(
-            report_data,
-            "Role Configuration Browsable",
-            "Information Disclosure",
-            f"Server role configuration is browsable. Roles found: {', '.join(roles_found)}. "
-            f"This may help attackers understand the authorization model.",
-            check="roles",
-            confidence="medium",
-            verification_status="surface-only",
-            safe_check=True,
-            destructive=False,
-            evidence={"roles": roles_found},
-        )
+        emit(report_data, "roles-browsable",
+             f"Server role configuration is browsable. Roles found: {', '.join(roles_found)}. "
+             f"This may help attackers understand the authorization model.",
+             confidence="medium",
+             verification_status="surface-only",
+             safe_check=True,
+             destructive=False,
+             evidence={"roles": roles_found})
     else:
         info("Role configuration not accessible (or RBAC not implemented)")

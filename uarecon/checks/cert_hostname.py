@@ -2,7 +2,7 @@ from urllib.parse import urlparse
 
 from asyncua.sync import Client
 
-from ._base import add_observation
+from ._base import emit
 from ..banner import warn, good, info, section
 from ..helpers import safe_disconnect, classify_error
 
@@ -75,25 +75,20 @@ def check_certificate_hostname(target, report_data, timeout=5):
                     f"Certificate name mismatch: cert covers {', '.join(sorted(cert_hosts))}, "
                     f"target is {target_host}, advertised endpoint host(s): {', '.join(sorted(endpoint_hosts)) or 'n/a'}"
                 )
-                add_observation(
-                    report_data,
-                    "Certificate Name Does Not Match Access Path",
-                    "Cryptographic Failures",
-                    f"Server certificate names ({', '.join(sorted(cert_hosts))}) do not match the target host ({target_host}) "
-                    f"or the advertised endpoint hostnames ({', '.join(sorted(endpoint_hosts)) or 'n/a'}). "
-                    f"In OPC UA this may still be benign depending on Application URI validation and deployment topology, "
-                    f"but it should be reviewed.",
-                    check="cert-hostname",
-                    confidence="low",
-                    verification_status="endpoint-analysis",
-                    safe_check=True,
-                    destructive=False,
-                    evidence={
-                        "cert_hosts": sorted(cert_hosts),
-                        "target_host": target_host,
-                        "endpoint_hosts": sorted(endpoint_hosts),
-                    },
-                )
+                emit(report_data, "cert-name-mismatch",
+                     f"Server certificate names ({', '.join(sorted(cert_hosts))}) do not match the target host ({target_host}) "
+                     f"or the advertised endpoint hostnames ({', '.join(sorted(endpoint_hosts)) or 'n/a'}). "
+                     f"In OPC UA this may still be benign depending on Application URI validation and deployment topology, "
+                     f"but it should be reviewed.",
+                     confidence="low",
+                     verification_status="endpoint-analysis",
+                     safe_check=True,
+                     destructive=False,
+                     evidence={
+                         "cert_hosts": sorted(cert_hosts),
+                         "target_host": target_host,
+                         "endpoint_hosts": sorted(endpoint_hosts),
+                     })
                 break
 
             except ImportError:

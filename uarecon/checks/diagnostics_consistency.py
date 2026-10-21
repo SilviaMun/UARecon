@@ -18,7 +18,7 @@ Framework alignment:
     FR1 (correlate auth failures)
 """
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import bad, warn, good, info, section, tag
 
 
@@ -87,20 +87,15 @@ def check_diagnostics_consistency(client, report_data):
 
     if not readable:
         warn("No diagnostic counters are readable")
-        add_observation(
-            report_data,
-            "Diagnostic Counters Not Accessible",
-            "Security Misconfiguration",
-            "None of the standard server diagnostic counters (ServerDiagnosticsSummary) "
-            "could be read. Security telemetry is unavailable to the current session, "
-            "which may indicate restricted access or disabled diagnostics.",
-            check="diagnostics-consistency",
-            confidence="medium",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={"diag_enabled": diag_enabled, "unreadable": unreadable},
-        )
+        emit(report_data, "diag-counters-inaccessible",
+             "None of the standard server diagnostic counters (ServerDiagnosticsSummary) "
+             "could be read. Security telemetry is unavailable to the current session, "
+             "which may indicate restricted access or disabled diagnostics.",
+             confidence="medium",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={"diag_enabled": diag_enabled, "unreadable": unreadable})
         return
 
     info(f"Readable counters: {len(readable)}/{len(DIAG_NODES)}")
@@ -264,40 +259,28 @@ def check_diagnostics_consistency(client, report_data):
     # --- Findings ---
 
     if issues:
-        add_finding(
-            report_data,
-            "Diagnostic Counter Inconsistencies",
-            "Medium",
-            "Security Misconfiguration",
-            f"{len(issues)} internal inconsistency(ies) found in server diagnostic counters: "
-            f"{issues[0]}"
-            + (f" (+{len(issues) - 1} more)" if len(issues) > 1 else "")
-            + ". Inconsistent counters undermine incident detection and forensic capability.",
-            check="diagnostics-consistency",
-            confidence="high",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence=evidence,
-        )
+        emit(report_data, "diag-counter-inconsistencies",
+             f"{len(issues)} internal inconsistency(ies) found in server diagnostic counters: "
+             f"{issues[0]}"
+             + (f" (+{len(issues) - 1} more)" if len(issues) > 1 else "")
+             + ". Inconsistent counters undermine incident detection and forensic capability.",
+             confidence="high",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence=evidence)
 
     if anomalies:
-        add_finding(
-            report_data,
-            "Diagnostic Telemetry Anomalies",
-            "Medium",
-            "Security Misconfiguration",
-            f"{len(anomalies)} anomaly(ies) detected in security diagnostics: "
-            f"{anomalies[0]}"
-            + (f" (+{len(anomalies) - 1} more)" if len(anomalies) > 1 else "")
-            + ". Review diagnostic configuration and investigate potential security events.",
-            check="diagnostics-consistency",
-            confidence="medium",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence=evidence,
-        )
+        emit(report_data, "diag-telemetry-anomalies",
+             f"{len(anomalies)} anomaly(ies) detected in security diagnostics: "
+             f"{anomalies[0]}"
+             + (f" (+{len(anomalies) - 1} more)" if len(anomalies) > 1 else "")
+             + ". Review diagnostic configuration and investigate potential security events.",
+             confidence="medium",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence=evidence)
 
     if not issues and not anomalies:
         if len(readable) >= 4:

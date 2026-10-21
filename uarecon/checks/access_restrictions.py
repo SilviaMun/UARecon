@@ -23,7 +23,7 @@ Framework alignment:
 
 from asyncua import ua
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import bad, warn, good, info, section, tag
 from ..helpers import sc, sn
 
@@ -300,22 +300,17 @@ def check_access_restrictions(client, report_data):
     # implement. Most use vendor-specific ACLs instead. Reported as observation.
     if not has_any_restrictions and not has_any_roles and accessible_count > 0:
         info(f"No AccessRestrictions or RolePermissions on {accessible_count} sensitive node(s)")
-        add_observation(
-            report_data,
-            "Authorization Metadata Not Exposed on Sensitive Nodes",
-            "Broken Access Control",
-            f"None of the {accessible_count} checked sensitive nodes define "
-            f"AccessRestrictions or RolePermissions attributes (OPC UA Part 5, added in 1.04). "
-            f"The server may rely on vendor-specific or application-level authorization instead. "
-            f"This is common and does not imply missing access control — verify through "
-            f"behavioral checks (browse-acl, node-write, method-access).",
-            check="access-restrictions",
-            confidence="low",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence=evidence,
-        )
+        emit(report_data, "no-authz-metadata",
+             f"None of the {accessible_count} checked sensitive nodes define "
+             f"AccessRestrictions or RolePermissions attributes (OPC UA Part 5, added in 1.04). "
+             f"The server may rely on vendor-specific or application-level authorization instead. "
+             f"This is common and does not imply missing access control — verify through "
+             f"behavioral checks (browse-acl, node-write, method-access).",
+             confidence="low",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence=evidence)
 
     # Finding 2: Partial coverage — some nodes protected, some not
     if has_any_restrictions and accessible_count > 0:
@@ -323,20 +318,15 @@ def check_access_restrictions(client, report_data):
         if unprotected:
             labels = [r["label"] for r in unprotected[:5]]
             warn(f"{len(unprotected)} sensitive node(s) lack AccessRestrictions")
-            add_observation(
-                report_data,
-                "Partial Access Restriction Coverage",
-                "Security Misconfiguration",
-                f"{len(nodes_with_restrictions)} of {accessible_count} sensitive nodes have "
-                f"AccessRestrictions, but {len(unprotected)} do not: {', '.join(labels)}. "
-                f"Inconsistent restriction coverage may leave gaps in the authorization model.",
-                check="access-restrictions",
-                confidence="medium",
-                verification_status="confirmed-read",
-                safe_check=True,
-                destructive=False,
-                evidence=evidence,
-            )
+            emit(report_data, "partial-restriction-coverage",
+                 f"{len(nodes_with_restrictions)} of {accessible_count} sensitive nodes have "
+                 f"AccessRestrictions, but {len(unprotected)} do not: {', '.join(labels)}. "
+                 f"Inconsistent restriction coverage may leave gaps in the authorization model.",
+                 confidence="medium",
+                 verification_status="confirmed-read",
+                 safe_check=True,
+                 destructive=False,
+                 evidence=evidence)
 
     # Finding 3: Restrictions present but missing encryption/signing requirement
     if nodes_with_restrictions:
@@ -351,20 +341,15 @@ def check_access_restrictions(client, report_data):
 
         if no_encryption:
             warn(f"{len(no_encryption)} node(s) with restrictions but no EncryptionRequired")
-            add_observation(
-                report_data,
-                "Access Restrictions Without Encryption Requirement",
-                "Security Misconfiguration",
-                f"{len(no_encryption)} sensitive node(s) define AccessRestrictions but do not "
-                f"require encryption: {', '.join(no_encryption[:5])}. Without EncryptionRequired, "
-                f"these nodes can be accessed over unencrypted channels.",
-                check="access-restrictions",
-                confidence="medium",
-                verification_status="confirmed-read",
-                safe_check=True,
-                destructive=False,
-                evidence=evidence,
-            )
+            emit(report_data, "restrictions-no-encryption",
+                 f"{len(no_encryption)} sensitive node(s) define AccessRestrictions but do not "
+                 f"require encryption: {', '.join(no_encryption[:5])}. Without EncryptionRequired, "
+                 f"these nodes can be accessed over unencrypted channels.",
+                 confidence="medium",
+                 verification_status="confirmed-read",
+                 safe_check=True,
+                 destructive=False,
+                 evidence=evidence)
 
     # Finding 4: User has write permissions on sensitive nodes via RolePermissions
     user_write_nodes = []
@@ -382,45 +367,34 @@ def check_access_restrictions(client, report_data):
     if user_write_nodes:
         warn(f"Current user has write RolePermissions on {len(user_write_nodes)} sensitive node(s)")
         tag("Broken Access Control")
-        add_finding(
-            report_data,
-            "Write Role Permissions on Sensitive Nodes",
-            "Medium",
-            "Broken Access Control",
-            f"The current user's UserRolePermissions include write-class permissions on "
-            f"{len(user_write_nodes)} sensitive node(s): "
-            f"{', '.join(n['label'] for n in user_write_nodes[:5])}. "
-            f"This is based on server-declared metadata (no write was attempted). "
-            f"If the provided credentials are for an administrative role, this may be expected. "
-            f"Review whether this access level is appropriate for the intended user role.",
-            check="access-restrictions",
-            confidence="medium",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={**evidence, "user_write_nodes": user_write_nodes[:10]},
-        )
+        emit(report_data, "write-role-permissions",
+             f"The current user's UserRolePermissions include write-class permissions on "
+             f"{len(user_write_nodes)} sensitive node(s): "
+             f"{', '.join(n['label'] for n in user_write_nodes[:5])}. "
+             f"This is based on server-declared metadata (no write was attempted). "
+             f"If the provided credentials are for an administrative role, this may be expected. "
+             f"Review whether this access level is appropriate for the intended user role.",
+             confidence="medium",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={**evidence, "user_write_nodes": user_write_nodes[:10]})
 
     # Finding 5: Process nodes without any authorization metadata
     if process_samples and not process_with_restrictions and not process_with_roles:
         if len(process_samples) >= 3:
             sample_labels = [r["label"] for r in process_samples[:5]]
             warn(f"Process-level nodes also lack authorization metadata")
-            add_observation(
-                report_data,
-                "No Authorization Metadata on Process Nodes",
-                "Security Misconfiguration",
-                f"Sampled {len(process_samples)} process-level nodes with sensitive keywords, "
-                f"none define AccessRestrictions or RolePermissions: "
-                f"{', '.join(sample_labels[:3])}... "
-                f"Authorization modelling does not extend to process-level nodes.",
-                check="access-restrictions",
-                confidence="medium",
-                verification_status="confirmed-read",
-                safe_check=True,
-                destructive=False,
-                evidence=evidence,
-            )
+            emit(report_data, "no-authz-process-nodes",
+                 f"Sampled {len(process_samples)} process-level nodes with sensitive keywords, "
+                 f"none define AccessRestrictions or RolePermissions: "
+                 f"{', '.join(sample_labels[:3])}... "
+                 f"Authorization modelling does not extend to process-level nodes.",
+                 confidence="medium",
+                 verification_status="confirmed-read",
+                 safe_check=True,
+                 destructive=False,
+                 evidence=evidence)
 
     # Good outcome
     if has_any_restrictions and has_any_roles and not user_write_nodes:

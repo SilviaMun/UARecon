@@ -1,7 +1,7 @@
 from asyncua import ua
 
 from ._base import (
-    add_finding, score_sensitive_content, mask_value, _decode_bytestring,
+    emit, score_sensitive_content, mask_value, _decode_bytestring,
 )
 from ..banner import warn, good, info, section, tag
 from ..helpers import classify_error
@@ -129,36 +129,24 @@ def check_sensitive_data_exposure(client, report_data, max_nodes=2000, threshold
     medium_score = [m for m in matches if 4 <= m["score"] < 10]
 
     if high_score:
-        add_finding(
-            report_data,
-            "Sensitive Data Exposed (High Confidence)",
-            "High",
-            "Information Disclosure",
-            f"{len(high_score)} node(s) contain values strongly matching sensitive data patterns "
-            f"(credentials, private keys, connection strings). Immediate review required.",
-            check="sensitive-data",
-            confidence="high",
-            verification_status="pattern-match",
-            safe_check=True,
-            destructive=False,
-            evidence=high_score[:20],
-        )
+        emit(report_data, "sensitive-data-high",
+             f"{len(high_score)} node(s) contain values strongly matching sensitive data patterns "
+             f"(credentials, private keys, connection strings). Immediate review required.",
+             confidence="high",
+             verification_status="pattern-match",
+             safe_check=True,
+             destructive=False,
+             evidence=high_score[:20])
 
     if medium_score:
-        add_finding(
-            report_data,
-            "Potentially Sensitive Data Exposed",
-            "Medium",
-            "Information Disclosure",
-            f"{len(medium_score)} node(s) match sensitive content patterns (tokens, internal addresses, "
-            f"high-entropy secrets, configuration values). Manual validation recommended.",
-            check="sensitive-data",
-            confidence="medium",
-            verification_status="pattern-match",
-            safe_check=True,
-            destructive=False,
-            evidence=medium_score[:20],
-        )
+        emit(report_data, "sensitive-data-medium",
+             f"{len(medium_score)} node(s) match sensitive content patterns (tokens, internal addresses, "
+             f"high-entropy secrets, configuration values). Manual validation recommended.",
+             confidence="medium",
+             verification_status="pattern-match",
+             safe_check=True,
+             destructive=False,
+             evidence=medium_score[:20])
 
     if not matches:
         good(f"No sensitive data patterns found in {tested[0]} nodes")

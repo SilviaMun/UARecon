@@ -1,6 +1,6 @@
 from asyncua import ua
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import warn, good, info, section, tag
 
 
@@ -97,47 +97,36 @@ def check_max_response_message_size(client, report_data):
     if unlimited_limits and len(unlimited_limits) >= 2:
         warn(f"Multiple unlimited response parameters: {', '.join(unlimited_limits)}")
         tag("Security Misconfiguration")
-        add_finding(
-            report_data,
-            "Unlimited Response Message Size (Amplification Risk)",
-            "Medium",
-            "Security Misconfiguration",
-            f"Server reports unlimited or unconfigured response limits: {', '.join(unlimited_limits)}. "
-            f"Combined with unbounded arrays/strings, an attacker could craft requests that generate "
-            f"disproportionately large responses, enabling amplification-style DoS attacks.",
-            check="max-response",
-            confidence="medium",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={
-                "unlimited_limits": unlimited_limits,
-                "excessive_limits": excessive_limits,
-                "max_response_size": response_size,
-                "max_array_length": max_array,
-                "max_string_length": max_string,
-                "max_bytestring_length": max_bytestring,
-            },
-        )
+        emit(report_data, "unlimited-response-size",
+             f"Server reports unlimited or unconfigured response limits: {', '.join(unlimited_limits)}. "
+             f"Combined with unbounded arrays/strings, an attacker could craft requests that generate "
+             f"disproportionately large responses, enabling amplification-style DoS attacks.",
+             confidence="medium",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={
+                 "unlimited_limits": unlimited_limits,
+                 "excessive_limits": excessive_limits,
+                 "max_response_size": response_size,
+                 "max_array_length": max_array,
+                 "max_string_length": max_string,
+                 "max_bytestring_length": max_bytestring,
+             })
     elif unlimited_limits:
         info(f"Unlimited parameter(s): {', '.join(unlimited_limits)} (single limit, lower risk)")
     elif excessive_limits:
         warn(f"Large response limits: {', '.join(excessive_limits)}")
-        add_observation(
-            report_data,
-            "Large Response Message Limits",
-            "Security Misconfiguration",
-            f"Server allows unusually large values: {', '.join(excessive_limits)}. "
-            f"This increases the theoretical amplification surface but may be bounded by transport limits.",
-            check="max-response",
-            confidence="low",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={
-                "excessive_limits": excessive_limits,
-                "max_response_size": response_size,
-            },
-        )
+        emit(report_data, "large-response-limits",
+             f"Server allows unusually large values: {', '.join(excessive_limits)}. "
+             f"This increases the theoretical amplification surface but may be bounded by transport limits.",
+             confidence="low",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={
+                 "excessive_limits": excessive_limits,
+                 "max_response_size": response_size,
+             })
     else:
         good("Response message size limits appear configured")

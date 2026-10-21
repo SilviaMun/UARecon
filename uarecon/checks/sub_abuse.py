@@ -12,7 +12,7 @@ Notes on false positive avoidance:
 
 from asyncua import ua
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import warn, good, info, section
 from ..helpers import classify_error
 
@@ -71,20 +71,15 @@ def check_subscription_abuse(client, report_data):
 
         if created >= max_items:
             warn(f"Server accepted {created} monitored items without limit")
-            add_observation(
-                report_data,
-                "No Visible Monitored Item Limit",
-                "Security Misconfiguration",
-                f"Server accepted at least {created} monitored items on a single subscription "
-                f"without rejecting any. While production clients may legitimately use this many items, "
-                f"the absence of explicit limits may indicate no per-session resource controls are configured.",
-                check="sub-abuse",
-                confidence="low",
-                verification_status="capacity-observation",
-                safe_check=False,
-                destructive=False,
-                evidence={"created_items": created, "max_tested": max_items},
-            )
+            emit(report_data, "no-monitored-item-limit",
+                 f"Server accepted at least {created} monitored items on a single subscription "
+                 f"without rejecting any. While production clients may legitimately use this many items, "
+                 f"the absence of explicit limits may indicate no per-session resource controls are configured.",
+                 confidence="low",
+                 verification_status="capacity-observation",
+                 safe_check=False,
+                 destructive=False,
+                 evidence={"created_items": created, "max_tested": max_items})
         elif created > 0:
             info(f"Server accepted {created} items before limit ({max_items} tested)")
         else:

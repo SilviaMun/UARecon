@@ -2,7 +2,7 @@ import time
 
 from asyncua.sync import Client
 
-from ._base import add_finding
+from ._base import emit
 from ..banner import critical, bad, good, info, section, tag
 from ..helpers import safe_disconnect
 
@@ -41,7 +41,7 @@ def check_bruteforce(target, report_data, userlist, passlist, timeout=5, delay=0
                 client.connect()
                 display = f"{user}:{pwd}" if pwd else f"{user}:(empty)"
                 critical(f"VALID CREDENTIALS: {display}  [{tested}/{total}]")
-                tag("Broken Authentication")
+                tag("Identification and Authentication Failures")
                 found.append(display)
                 safe_disconnect(client)
             except Exception:
@@ -53,18 +53,12 @@ def check_bruteforce(target, report_data, userlist, passlist, timeout=5, delay=0
             info(f"Progress: {tested}/{total} ({len(found)} found)")
 
     if found:
-        add_finding(
-            report_data,
-            "Valid Credentials Found (Brute-Force)",
-            "Critical",
-            "Broken Authentication",
-            f"Brute-force attack found {len(found)} valid credential(s): {', '.join(found)}.",
-            check="bruteforce",
-            confidence="high",
-            verification_status="confirmed-auth",
-            safe_check=False,
-            destructive=True,
-            evidence={"accepted_credentials": found, "tested_combinations": total},
-        )
+        emit(report_data, "bruteforce-creds",
+             f"Brute-force attack found {len(found)} valid credential(s): {', '.join(found)}.",
+             confidence="high",
+             verification_status="confirmed-auth",
+             safe_check=False,
+             destructive=True,
+             evidence={"accepted_credentials": found, "tested_combinations": total})
     else:
         good(f"No valid credentials found in {total} combinations")

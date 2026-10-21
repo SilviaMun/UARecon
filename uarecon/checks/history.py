@@ -14,7 +14,7 @@ import datetime
 
 from asyncua import ua
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import warn, good, info, section, tag
 
 
@@ -94,37 +94,25 @@ def check_history_read_access(client, report_data):
             pass
 
     if process_readable:
-        add_finding(
-            report_data,
-            "Process Node Historical Data Accessible",
-            "Medium",
-            "Information Disclosure",
-            f"Authenticated user can read historical values from {len(process_readable)} process-level node(s): "
-            f"{', '.join(process_readable[:5])}. Historical process data may reveal operational patterns, "
-            f"setpoints, and trends useful for attack planning.",
-            check="history",
-            confidence="high",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={"readable_process_nodes": process_readable[:20]},
-        )
+        emit(report_data, "process-history-accessible",
+             f"Authenticated user can read historical values from {len(process_readable)} process-level node(s): "
+             f"{', '.join(process_readable[:5])}. Historical process data may reveal operational patterns, "
+             f"setpoints, and trends useful for attack planning.",
+             confidence="high",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={"readable_process_nodes": process_readable[:20]})
     elif infra_readable:
-        # Only infrastructure nodes have history - this is not a security finding
         info(f"HistoryRead available on standard server nodes only ({len(infra_readable)} nodes)")
-        add_observation(
-            report_data,
-            "HistoryRead Service Available",
-            "Information Disclosure",
-            f"HistoryRead is available but only confirmed on standard server infrastructure nodes "
-            f"({', '.join(infra_readable[:3])}). This is expected behavior and not a security concern "
-            f"unless process-level nodes are also historized.",
-            check="history",
-            confidence="low",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={"readable_infra_nodes": infra_readable[:10]},
-        )
+        emit(report_data, "history-service-available",
+             f"HistoryRead is available but only confirmed on standard server infrastructure nodes "
+             f"({', '.join(infra_readable[:3])}). This is expected behavior and not a security concern "
+             f"unless process-level nodes are also historized.",
+             confidence="low",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={"readable_infra_nodes": infra_readable[:10]})
     else:
         good("No historical data accessible (or historizing not enabled)")

@@ -1,6 +1,6 @@
 from asyncua import ua
 
-from ._base import add_observation
+from ._base import emit
 from ..banner import good, info, section
 from ..helpers import classify_error
 
@@ -13,19 +13,14 @@ def check_register_nodes_abuse(client, report_data):
         if result:
             registered = len(result)
             info(f"RegisterNodes accepted {registered} node registrations")
-            add_observation(
-                report_data,
-                "RegisterNodes Accepted Test Registrations",
-                "Security Misconfiguration",
-                f"Server accepted {registered} test node registrations. This may be spec-compliant behavior and "
-                f"should only be interpreted in the context of resource-consumption testing.",
-                check="register-abuse",
-                confidence="low",
-                verification_status="service-accepted",
-                safe_check=False,
-                destructive=False,
-                evidence={"registered_count": registered},
-            )
+            emit(report_data, "register-nodes-accepted",
+                 f"Server accepted {registered} test node registrations. This may be spec-compliant behavior and "
+                 f"should only be interpreted in the context of resource-consumption testing.",
+                 confidence="low",
+                 verification_status="service-accepted",
+                 safe_check=False,
+                 destructive=False,
+                 evidence={"registered_count": registered})
             try:
                 client.unregister_nodes(result)
             except Exception:

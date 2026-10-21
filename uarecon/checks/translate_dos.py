@@ -1,6 +1,6 @@
 from asyncua import ua
 
-from ._base import add_observation
+from ._base import emit
 from ..banner import warn, good, info, section
 from ..helpers import classify_error
 
@@ -46,20 +46,15 @@ def check_translate_dos(client, report_data):
 
             if len(results) >= 100:
                 warn(f"Server accepted bulk TranslateBrowsePaths ({len(results)} paths, 5 levels deep each)")
-                add_observation(
-                    report_data,
-                    "Bulk TranslateBrowsePaths Accepted",
-                    "Security Misconfiguration",
-                    f"Server processed {len(results)} TranslateBrowsePathsToNodeIds requests in a single call "
-                    f"with 5-level deep paths. This service performs recursive path traversal and may be "
-                    f"exploitable for CPU exhaustion if no server-side rate limiting is in place.",
-                    check="translate-dos",
-                    confidence="low",
-                    verification_status="capacity-observation",
-                    safe_check=False,
-                    destructive=False,
-                    evidence={"paths_sent": len(test_paths), "paths_processed": len(results), "depth": 5},
-                )
+                emit(report_data, "bulk-translate-accepted",
+                     f"Server processed {len(results)} TranslateBrowsePathsToNodeIds requests in a single call "
+                     f"with 5-level deep paths. This service performs recursive path traversal and may be "
+                     f"exploitable for CPU exhaustion if no server-side rate limiting is in place.",
+                     confidence="low",
+                     verification_status="capacity-observation",
+                     safe_check=False,
+                     destructive=False,
+                     evidence={"paths_sent": len(test_paths), "paths_processed": len(results), "depth": 5})
         elif results:
             info(f"Server processed {len(results)} paths (partial acceptance)")
         else:

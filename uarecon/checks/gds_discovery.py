@@ -1,6 +1,6 @@
 from asyncua.sync import Client
 
-from ._base import add_finding
+from ._base import emit
 from ..banner import warn, good, info, section, tag
 from ..helpers import safe_disconnect, classify_error
 
@@ -21,20 +21,14 @@ def check_gds_network_discovery(target, report_data, timeout=5):
                 cap_str = ", ".join(str(c) for c in caps) if caps else "none"
                 info(f"  {server_name or '(unnamed)'} | {discovery_url} | caps: {cap_str}")
 
-            add_finding(
-                report_data,
-                "FindServersOnNetwork Exposes OT Network",
-                "Medium",
-                "Information Disclosure",
-                f"FindServersOnNetwork returned {len(records)} server(s). "
-                f"This may help attackers map the OPC UA environment.",
-                check="gds-discovery",
-                confidence="medium",
-                verification_status="confirmed-read",
-                safe_check=True,
-                destructive=False,
-                evidence={"record_count": len(records)},
-            )
+            emit(report_data, "find-servers-on-network",
+                 f"FindServersOnNetwork returned {len(records)} server(s). "
+                 f"This may help attackers map the OPC UA environment.",
+                 confidence="medium",
+                 verification_status="confirmed-read",
+                 safe_check=True,
+                 destructive=False,
+                 evidence={"record_count": len(records)})
         else:
             good("FindServersOnNetwork returned empty")
     except Exception as e:

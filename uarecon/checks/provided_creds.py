@@ -24,7 +24,7 @@ import datetime
 from asyncua import ua
 from asyncua.sync import Client
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import critical, bad, warn, good, info, section, tag
 from ..helpers import (
     safe_disconnect, classify_error, sc, sn,
@@ -382,62 +382,45 @@ def check_provided_credentials(target, user, pwd, report_data, timeout=5):
     if creds_on_none:
         critical(f"Credentials for '{user}' accepted on SecurityPolicy None")
         tag("Cryptographic Failures")
-        add_finding(
-            report_data,
-            "Credentials Accepted on Unencrypted Endpoint",
-            "Critical",
-            "Cryptographic Failures",
-            f"User '{user}' credentials are accepted on an endpoint with SecurityPolicy None / "
-            f"SecurityMode None. Credentials are transmitted in plaintext and can be intercepted "
-            f"by any network-level attacker. This violates OPC UA Part 2 and Practical Security "
-            f"Guidelines recommendations.",
-            check="provided-creds",
-            confidence="high",
-            verification_status="confirmed-auth",
-            safe_check=True,
-            destructive=False,
-            evidence=evidence,
-        )
+        emit(report_data, "creds-on-none",
+             f"User '{user}' credentials are accepted on an endpoint with SecurityPolicy None / "
+             f"SecurityMode None. Credentials are transmitted in plaintext and can be intercepted "
+             f"by any network-level attacker. This violates OPC UA Part 2 and Practical Security "
+             f"Guidelines recommendations.",
+             confidence="high",
+             verification_status="confirmed-auth",
+             safe_check=True,
+             destructive=False,
+             evidence=evidence)
 
     # --- Finding 2: Elevated access ---
     if worst_level == "elevated":
         warn(f"User '{user}' has ELEVATED access level")
-        add_observation(
-            report_data,
-            "Elevated Access Level Detected",
-            "Broken Access Control",
-            f"User '{user}' has elevated access: the server reports write-capable "
-            f"UserAccessLevel and/or executable methods. Note: this is based on server-reported "
-            f"attributes, not confirmed operations. Review whether this access level is "
-            f"appropriate for the intended user role (IEC 62443 FR2).",
-            check="provided-creds",
-            confidence="medium",
-            verification_status="confirmed-auth",
-            safe_check=True,
-            destructive=False,
-            evidence=evidence,
-        )
+        emit(report_data, "elevated-access",
+             f"User '{user}' has elevated access: the server reports write-capable "
+             f"UserAccessLevel and/or executable methods. Note: this is based on server-reported "
+             f"attributes, not confirmed operations. Review whether this access level is "
+             f"appropriate for the intended user role (IEC 62443 FR2).",
+             confidence="medium",
+             verification_status="confirmed-auth",
+             safe_check=True,
+             destructive=False,
+             evidence=evidence)
 
     # --- Finding 3: Hardening misconfigurations ---
     if all_hardening and not creds_on_none:
         unique_issues = list(dict.fromkeys(all_hardening))
         warn(f"{len(unique_issues)} hardening issue(s) detected")
         tag("Security Misconfiguration")
-        add_finding(
-            report_data,
-            "Endpoint Hardening Issues for Authenticated Session",
-            "Medium",
-            "Security Misconfiguration",
-            f"The authenticated session for user '{user}' uses endpoint configurations with "
-            f"hardening weaknesses: {'; '.join(unique_issues[:5])}. "
-            f"Review endpoint security policies per OPC UA Practical Security Guidelines.",
-            check="provided-creds",
-            confidence="high",
-            verification_status="confirmed-auth",
-            safe_check=True,
-            destructive=False,
-            evidence=evidence,
-        )
+        emit(report_data, "hardening-issues",
+             f"The authenticated session for user '{user}' uses endpoint configurations with "
+             f"hardening weaknesses: {'; '.join(unique_issues[:5])}. "
+             f"Review endpoint security policies per OPC UA Practical Security Guidelines.",
+             confidence="high",
+             verification_status="confirmed-auth",
+             safe_check=True,
+             destructive=False,
+             evidence=evidence)
 
     # --- Store the credential profile in report_data for other checks ---
     report_data.setdefault("credential_profiles", []).append({

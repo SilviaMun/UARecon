@@ -77,6 +77,25 @@ def sc(node):
         return []
 
 
+def extract_uri_from_cert(cert_path):
+    for inform in ["DER", "PEM"]:
+        result = subprocess.run(
+            ["openssl", "x509", "-in", cert_path, "-inform", inform,
+             "-noout", "-text"],
+            capture_output=True, text=True,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                stripped = line.strip()
+                if "URI:" not in stripped:
+                    continue
+                for part in stripped.split(","):
+                    part = part.strip()
+                    if part.startswith("URI:"):
+                        return part[4:].strip()
+    return None
+
+
 def generate_self_signed_cert(uri="urn:UARecon", out_dir=None):
     created_tmp = False
     if out_dir is None:

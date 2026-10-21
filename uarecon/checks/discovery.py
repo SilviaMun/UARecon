@@ -15,7 +15,7 @@ from urllib.parse import urlparse
 
 from asyncua.sync import Client
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import warn, good, info, section, tag
 from ..helpers import safe_disconnect, classify_error
 
@@ -67,44 +67,31 @@ def check_discovery_exposure(target, report_data, timeout=5):
                 other_servers.pop(0)
 
             if other_servers:
-                # FindServers reveals OTHER servers (beyond the target) - this exposes topology
                 warn(f"FindServers reveals {len(other_servers)} additional server(s) beyond the target")
                 tag("Information Disclosure")
-                add_finding(
-                    report_data,
-                    "Discovery Service Exposes Additional Servers",
-                    "Medium",
-                    "Information Disclosure",
-                    f"FindServers returned {len(servers)} server(s), of which {len(other_servers)} appear to be "
-                    f"distinct from the target. This may expose additional OPC UA targets and internal topology. "
-                    f"If this server operates as a Local Discovery Server (LDS), multi-server responses "
-                    f"are expected but still reveal topology.",
-                    check="discovery",
-                    confidence="medium",
-                    verification_status="confirmed-read",
-                    safe_check=True,
-                    destructive=False,
-                    evidence={
-                        "server_count": len(servers),
-                        "other_servers": other_servers[:10],
-                    },
-                )
+                emit(report_data, "discovery-exposes-servers",
+                     f"FindServers returned {len(servers)} server(s), of which {len(other_servers)} appear to be "
+                     f"distinct from the target. This may expose additional OPC UA targets and internal topology. "
+                     f"If this server operates as a Local Discovery Server (LDS), multi-server responses "
+                     f"are expected but still reveal topology.",
+                     confidence="medium",
+                     verification_status="confirmed-read",
+                     safe_check=True,
+                     destructive=False,
+                     evidence={
+                         "server_count": len(servers),
+                         "other_servers": other_servers[:10],
+                     })
             elif len(servers) > 1:
-                # Multiple entries but all on the same host (multi-application on one host)
                 info(f"FindServers returned {len(servers)} server(s) (all on same host)")
-                add_observation(
-                    report_data,
-                    "Multiple Applications on Same Host",
-                    "Information Disclosure",
-                    f"FindServers returned {len(servers)} server(s), all apparently on the same host. "
-                    f"This reveals co-located OPC UA applications but no remote topology.",
-                    check="discovery",
-                    confidence="low",
-                    verification_status="confirmed-read",
-                    safe_check=True,
-                    destructive=False,
-                    evidence={"server_count": len(servers)},
-                )
+                emit(report_data, "multi-app-same-host",
+                     f"FindServers returned {len(servers)} server(s), all apparently on the same host. "
+                     f"This reveals co-located OPC UA applications but no remote topology.",
+                     confidence="low",
+                     verification_status="confirmed-read",
+                     safe_check=True,
+                     destructive=False,
+                     evidence={"server_count": len(servers)})
             else:
                 good("FindServers returned only self (no extra topology)")
         else:

@@ -1,7 +1,7 @@
 from asyncua import ua
 from asyncua.sync import Client
 
-from ._base import add_finding
+from ._base import emit
 from ..banner import bad, good, info, section, tag
 from ..helpers import safe_disconnect, classify_error
 
@@ -35,20 +35,14 @@ def check_transfer_subscription(target, client, report_data, timeout=5):
                 uac.transfer_subscriptions([sub_id], False)
                 bad(f"SUBSCRIPTION TRANSFER ACCEPTED: subscription {sub_id} moved to another session")
                 tag("Broken Access Control")
-                add_finding(
-                    report_data,
-                    "Subscription Transfer Hijack Possible",
-                    "Critical",
-                    "Broken Access Control",
-                    f"Server allowed transferring subscription {sub_id} to another session. "
-                    f"This may permit data-stream hijacking.",
-                    check="transfer-sub",
-                    confidence="medium",
-                    verification_status="confirmed-exec",
-                    safe_check=False,
-                    destructive=False,
-                    evidence={"subscription_id": sub_id},
-                )
+                emit(report_data, "subscription-hijack",
+                     f"Server allowed transferring subscription {sub_id} to another session. "
+                     f"This may permit data-stream hijacking.",
+                     confidence="medium",
+                     verification_status="confirmed-exec",
+                     safe_check=False,
+                     destructive=False,
+                     evidence={"subscription_id": sub_id})
             else:
                 info("TransferSubscriptions service not available in client library")
         except ua.UaStatusCodeError as e:

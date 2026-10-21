@@ -10,7 +10,7 @@ Prod-safe, read-only (endpoint analysis only).
 
 from asyncua.sync import Client
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import bad, warn, good, info, section, tag
 from ..helpers import safe_disconnect
 
@@ -81,23 +81,18 @@ def check_application_uri_consistency(target, report_data, timeout=5):
 
     if not cert_uris:
         warn("No URI found in certificate SAN extension")
-        add_observation(
-            report_data,
-            "No ApplicationUri in Certificate SAN",
-            "Cryptographic Failures",
-            "Server certificate does not contain a URI in the SubjectAlternativeName. "
-            "The ApplicationUri is required to be in the SAN for identity binding. "
-            "Clients cannot verify server identity.",
-            check="app-uri",
-            confidence="high",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={
-                "declared_app_uris": sorted(app_uris),
-                "cert_san_uris": [],
-            },
-        )
+        emit(report_data, "no-san-uri",
+             "Server certificate does not contain a URI in the SubjectAlternativeName. "
+             "The ApplicationUri is required to be in the SAN for identity binding. "
+             "Clients cannot verify server identity.",
+             confidence="high",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={
+                 "declared_app_uris": sorted(app_uris),
+                 "cert_san_uris": [],
+             })
         return
 
     info(f"Certificate SAN URI(s): {', '.join(sorted(cert_uris))}")
@@ -112,46 +107,33 @@ def check_application_uri_consistency(target, report_data, timeout=5):
     if mismatched_app:
         bad(f"ApplicationUri NOT in certificate SAN: {', '.join(sorted(mismatched_app))}")
         tag("Cryptographic Failures")
-        add_finding(
-            report_data,
-            "ApplicationUri Does Not Match Certificate",
-            "High",
-            "Cryptographic Failures",
-            f"Server declares ApplicationUri {', '.join(sorted(mismatched_app))} in its "
-            f"ApplicationDescription but the certificate SAN only contains "
-            f"{', '.join(sorted(cert_uris))}. The ApplicationUri must be in the certificate SAN "
-            f"for identity binding. This mismatch means clients cannot reliably authenticate "
-            f"the server, enabling rogue-server attacks.",
-            check="app-uri",
-            confidence="high",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={
-                "declared_app_uris": sorted(app_uris),
-                "cert_san_uris": sorted(cert_uris),
-                "mismatched": sorted(mismatched_app),
-            },
-        )
+        emit(report_data, "app-uri-mismatch",
+             f"Server declares ApplicationUri {', '.join(sorted(mismatched_app))} in its "
+             f"ApplicationDescription but the certificate SAN only contains "
+             f"{', '.join(sorted(cert_uris))}. The ApplicationUri must be in the certificate SAN "
+             f"for identity binding. This mismatch means clients cannot reliably authenticate "
+             f"the server, enabling rogue-server attacks.",
+             confidence="high",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={
+                 "declared_app_uris": sorted(app_uris),
+                 "cert_san_uris": sorted(cert_uris),
+                 "mismatched": sorted(mismatched_app),
+             })
     elif not matching and cert_uris:
-        # No app_uris match, but we do have cert URIs
         bad(f"ApplicationUri mismatch: declared={sorted(app_uris)}, cert={sorted(cert_uris)}")
         tag("Cryptographic Failures")
-        add_finding(
-            report_data,
-            "ApplicationUri Does Not Match Certificate",
-            "High",
-            "Cryptographic Failures",
-            f"Server declares ApplicationUri(s) {', '.join(sorted(app_uris))} but certificate "
-            f"SAN contains different URI(s) {', '.join(sorted(cert_uris))}. "
-            f"This violates OPC UA identity binding requirements.",
-            check="app-uri",
-            confidence="high",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={
-                "declared_app_uris": sorted(app_uris),
-                "cert_san_uris": sorted(cert_uris),
-            },
-        )
+        emit(report_data, "app-uri-mismatch",
+             f"Server declares ApplicationUri(s) {', '.join(sorted(app_uris))} but certificate "
+             f"SAN contains different URI(s) {', '.join(sorted(cert_uris))}. "
+             f"This violates OPC UA identity binding requirements.",
+             confidence="high",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={
+                 "declared_app_uris": sorted(app_uris),
+                 "cert_san_uris": sorted(cert_uris),
+             })

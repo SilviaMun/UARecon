@@ -16,7 +16,7 @@ Mode classification:
     SignAndEncrypt:  Full protection (integrity + confidentiality)
 """
 
-from ._base import add_finding, add_observation
+from ._base import emit, was_emitted
 from ..banner import bad, warn, good, info, section, tag
 
 
@@ -70,7 +70,6 @@ def check_security_policies(report_data):
             tag("Cryptographic Failures")
 
         elif classification == "unknown":
-            # Unknown policy - could be custom/vendor-specific or very old
             unknown_policies.add(policy)
             warn(f"UNKNOWN POLICY: {ep['url']} | {mode} | {policy}")
             tag("Cryptographic Failures")
@@ -93,96 +92,74 @@ def check_security_policies(report_data):
 
     # --- Findings ---
 
-    if has_none:
+    # Skip policy-none if connection phase already confirmed it at Critical severity
+    _conn_none = was_emitted(report_data, "conn-policy-none")
+
+    if has_none and not _conn_none:
         bad("SecurityPolicy None is available")
         tag("Cryptographic Failures")
-        add_finding(
-            report_data,
-            "SecurityPolicy None Available",
-            "Medium",
-            "Cryptographic Failures",
-            "Server advertises at least one endpoint with SecurityPolicy None (no security). "
-            "Communication on this endpoint is unencrypted and unauthenticated at the transport level. "
-            "Many OPC UA servers advertise None for endpoint discovery, but it should be disabled "
-            "when not required. Actual impact depends on whether credentials or data are transmitted "
-            "over this endpoint (see anonymous, user-tokens, provided-creds checks).",
-            check="security-policies",
-            confidence="high",
-            verification_status="endpoint-analysis",
-            safe_check=True,
-            destructive=False,
-            evidence={"has_none": True},
-        )
+        emit(report_data, "policy-none",
+             "Server advertises at least one endpoint with SecurityPolicy None (no security). "
+             "Communication on this endpoint is unencrypted and unauthenticated at the transport level. "
+             "Many OPC UA servers advertise None for endpoint discovery, but it should be disabled "
+             "when not required. Actual impact depends on whether credentials or data are transmitted "
+             "over this endpoint (see anonymous, user-tokens, provided-creds checks).",
+             confidence="high",
+             verification_status="endpoint-analysis",
+             safe_check=True,
+             destructive=False,
+             evidence={"has_none": True})
+    elif has_none and _conn_none:
+        info("SecurityPolicy None confirmed by connection phase (Critical finding already recorded)")
 
     if deprecated_policies:
-        add_finding(
-            report_data,
-            f"Deprecated Security Policy: {', '.join(sorted(deprecated_policies))}",
-            "High",
-            "Cryptographic Failures",
-            f"Server offers deprecated policies: {', '.join(sorted(deprecated_policies))}. "
-            f"Basic128Rsa15 was deprecated by OPC Foundation in 2022 due to use of SHA-1 and "
-            f"inadequate symmetric key length (128-bit). It MUST be disabled per BSI TR-03116-3.",
-            check="security-policies",
-            confidence="high",
-            verification_status="endpoint-analysis",
-            safe_check=True,
-            destructive=False,
-            evidence={"deprecated_policies": sorted(deprecated_policies)},
-        )
+        emit(report_data, "deprecated-policy",
+             f"Server offers deprecated policies: {', '.join(sorted(deprecated_policies))}. "
+             f"Basic128Rsa15 was deprecated by OPC Foundation in 2022 due to use of SHA-1 and "
+             f"inadequate symmetric key length (128-bit). It MUST be disabled per BSI TR-03116-3.",
+             title=f"Deprecated Security Policy: {', '.join(sorted(deprecated_policies))}",
+             confidence="high",
+             verification_status="endpoint-analysis",
+             safe_check=True,
+             destructive=False,
+             evidence={"deprecated_policies": sorted(deprecated_policies)})
 
     if legacy_policies:
-        add_finding(
-            report_data,
-            f"Legacy Security Policy: {', '.join(sorted(legacy_policies))}",
-            "Medium",
-            "Cryptographic Failures",
-            f"Server offers legacy policy {', '.join(sorted(legacy_policies))}. "
-            f"Basic256 uses SHA-1 for asymmetric signatures which is vulnerable to collision attacks. "
-            f"Upgrade to Basic256Sha256 or newer. Acceptable only if no clients require it.",
-            check="security-policies",
-            confidence="high",
-            verification_status="endpoint-analysis",
-            safe_check=True,
-            destructive=False,
-            evidence={"legacy_policies": sorted(legacy_policies)},
-        )
+        emit(report_data, "legacy-policy",
+             f"Server offers legacy policy {', '.join(sorted(legacy_policies))}. "
+             f"Basic256 uses SHA-1 for asymmetric signatures which is vulnerable to collision attacks. "
+             f"Upgrade to Basic256Sha256 or newer. Acceptable only if no clients require it.",
+             title=f"Legacy Security Policy: {', '.join(sorted(legacy_policies))}",
+             confidence="high",
+             verification_status="endpoint-analysis",
+             safe_check=True,
+             destructive=False,
+             evidence={"legacy_policies": sorted(legacy_policies)})
 
     if unknown_policies:
-        add_finding(
-            report_data,
-            f"Unknown Security Policy: {', '.join(sorted(unknown_policies))}",
-            "Medium",
-            "Cryptographic Failures",
-            f"Server offers unrecognized security policies: {', '.join(sorted(unknown_policies))}. "
-            f"These are not part of the standard OPC UA security policy set and their cryptographic "
-            f"properties cannot be verified. They may be vendor-specific, obsolete, or misconfigured.",
-            check="security-policies",
-            confidence="medium",
-            verification_status="endpoint-analysis",
-            safe_check=True,
-            destructive=False,
-            evidence={"unknown_policies": sorted(unknown_policies)},
-        )
+        emit(report_data, "unknown-policy",
+             f"Server offers unrecognized security policies: {', '.join(sorted(unknown_policies))}. "
+             f"These are not part of the standard OPC UA security policy set and their cryptographic "
+             f"properties cannot be verified. They may be vendor-specific, obsolete, or misconfigured.",
+             title=f"Unknown Security Policy: {', '.join(sorted(unknown_policies))}",
+             confidence="medium",
+             verification_status="endpoint-analysis",
+             safe_check=True,
+             destructive=False,
+             evidence={"unknown_policies": sorted(unknown_policies)})
 
     if sign_only_policies:
-        add_finding(
-            report_data,
-            "Sign-Only Mode Available (No Encryption)",
-            "Medium",
-            "Cryptographic Failures",
-            f"Endpoints with Sign-only mode (no encryption) are available for: "
-            f"{', '.join(sorted(sign_only_policies))}. "
-            f"Message integrity is protected but data confidentiality is NOT. "
-            f"Process values, credentials, and operational data are readable on the network. "
-            f"SignAndEncrypt should be mandatory for secure deployments.",
-            check="security-policies",
-            confidence="high",
-            verification_status="endpoint-analysis",
-            safe_check=True,
-            destructive=False,
-            evidence={"sign_only_policies": sorted(sign_only_policies)},
-        )
+        emit(report_data, "sign-only-mode",
+             f"Endpoints with Sign-only mode (no encryption) are available for: "
+             f"{', '.join(sorted(sign_only_policies))}. "
+             f"Message integrity is protected but data confidentiality is NOT. "
+             f"Process values, credentials, and operational data are readable on the network. "
+             f"SignAndEncrypt should be mandatory for secure deployments.",
+             confidence="high",
+             verification_status="endpoint-analysis",
+             safe_check=True,
+             destructive=False,
+             evidence={"sign_only_policies": sorted(sign_only_policies)})
 
     # --- Summary ---
 
@@ -195,45 +172,47 @@ def check_security_policies(report_data):
 
     # --- Downgrade Path Detection ---
     has_good = has_strong or has_acceptable
-    has_weak = has_none or deprecated_policies or legacy_policies or sign_only_policies or unknown_policies
 
-    if has_good and has_weak:
-        weak_options = []
-        if has_none:
-            weak_options.append("SecurityPolicy None")
-        if deprecated_policies:
-            weak_options.extend(sorted(deprecated_policies))
-        if legacy_policies:
-            weak_options.extend(sorted(legacy_policies))
-        if unknown_policies:
-            weak_options.extend(sorted(unknown_policies))
-        if sign_only_policies:
-            weak_options.append("Sign-only mode")
+    # Count distinct weak categories; individual findings already cover each one.
+    # Only emit downgrade-path when 2+ categories coexist — that's the combined
+    # attack surface that individual findings don't convey.
+    weak_categories = []
+    if has_none:
+        weak_categories.append("SecurityPolicy None")
+    if deprecated_policies:
+        weak_categories.extend(sorted(deprecated_policies))
+    if legacy_policies:
+        weak_categories.extend(sorted(legacy_policies))
+    if unknown_policies:
+        weak_categories.extend(sorted(unknown_policies))
+    if sign_only_policies:
+        weak_categories.append("Sign-only mode")
 
-        warn(f"WEAKER MODES: strong endpoints coexist with: {', '.join(weak_options)}")
+    weak_type_count = sum([
+        bool(has_none), bool(deprecated_policies), bool(legacy_policies),
+        bool(unknown_policies), bool(sign_only_policies),
+    ])
+
+    if has_good and weak_type_count >= 2:
+        warn(f"WEAKER MODES: strong endpoints coexist with: {', '.join(weak_categories)}")
         tag("Cryptographic Failures")
-        add_finding(
-            report_data,
-            "Weaker Security Modes Coexist with Strong Endpoints",
-            "Medium",
-            "Cryptographic Failures",
-            f"Server offers strong endpoints (SignAndEncrypt with modern policies) alongside "
-            f"weaker options ({', '.join(weak_options)}). This increases downgrade risk if "
-            f"endpoint selection is not strictly enforced by clients — a network-level attacker "
-            f"could manipulate the GetEndpoints response to suppress strong options. "
-            f"Best practice recommends removing weaker endpoints "
-            f"when strong alternatives are available.",
-            check="security-policies",
-            confidence="high",
-            verification_status="endpoint-analysis",
-            safe_check=True,
-            destructive=False,
-            evidence={
-                "has_strong": has_strong,
-                "has_acceptable": has_acceptable,
-                "weak_options": weak_options,
-            },
-        )
+        emit(report_data, "downgrade-path",
+             f"Server offers strong endpoints (SignAndEncrypt with modern policies) alongside "
+             f"weaker options ({', '.join(weak_categories)}). Multiple categories of weakness "
+             f"widen the downgrade attack surface — a network-level attacker could manipulate "
+             f"the GetEndpoints response to suppress strong options. "
+             f"Best practice recommends removing weaker endpoints "
+             f"when strong alternatives are available.",
+             confidence="high",
+             verification_status="endpoint-analysis",
+             safe_check=True,
+             destructive=False,
+             evidence={
+                 "has_strong": has_strong,
+                 "has_acceptable": has_acceptable,
+                 "weak_categories": weak_categories,
+                 "weak_type_count": weak_type_count,
+             })
 
     anon_endpoints = [ep for ep in endpoints if "Anonymous" in ep.get("tokens", [])]
     if anon_endpoints:

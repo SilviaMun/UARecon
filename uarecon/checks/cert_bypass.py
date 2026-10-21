@@ -1,6 +1,6 @@
 from asyncua.sync import Client
 
-from ._base import add_finding
+from ._base import emit
 from ..banner import bad, warn, good, info, section, tag
 from ..helpers import (
     safe_disconnect, classify_error,
@@ -47,20 +47,14 @@ def check_certificate_trust_bypass(target, report_data, timeout=5):
         if result is True:
             bad(f"EXPIRED CERTIFICATE ACCEPTED ({pol}/{mod})")
             tag("Cryptographic Failures")
-            add_finding(
-                report_data,
-                "Expired Client Certificate Accepted",
-                "High",
-                "Cryptographic Failures",
-                f"Server accepted an expired client certificate on {pol}/{mod}. "
-                f"Certificate validity period does not appear to be enforced.",
-                check="cert-bypass",
-                confidence="high",
-                verification_status="confirmed-auth-bypass",
-                safe_check=False,
-                destructive=False,
-                evidence={"policy": pol, "mode": mod, "test": "expired-cert"},
-            )
+            emit(report_data, "expired-cert-accepted",
+                 f"Server accepted an expired client certificate on {pol}/{mod}. "
+                 f"Certificate validity period does not appear to be enforced.",
+                 confidence="high",
+                 verification_status="confirmed-auth-bypass",
+                 safe_check=False,
+                 destructive=False,
+                 evidence={"policy": pol, "mode": mod, "test": "expired-cert"})
         elif "badcertificatetimeinvalid" in result_str:
             good(f"Expired certificate rejected ({result})")
         elif "badcertificateuntrusted" in result_str:
@@ -80,20 +74,14 @@ def check_certificate_trust_bypass(target, report_data, timeout=5):
         if result is True:
             bad(f"WRONG URI CERTIFICATE ACCEPTED ({pol}/{mod})")
             tag("Cryptographic Failures")
-            add_finding(
-                report_data,
-                "Wrong URI Client Certificate Accepted",
-                "High",
-                "Cryptographic Failures",
-                f"Server accepted a certificate with a mismatched Application URI on {pol}/{mod}. "
-                f"Application identity validation does not appear to be enforced.",
-                check="cert-bypass",
-                confidence="high",
-                verification_status="confirmed-auth-bypass",
-                safe_check=False,
-                destructive=False,
-                evidence={"policy": pol, "mode": mod, "test": "wrong-uri-cert"},
-            )
+            emit(report_data, "wrong-uri-cert-accepted",
+                 f"Server accepted a certificate with a mismatched Application URI on {pol}/{mod}. "
+                 f"Application identity validation does not appear to be enforced.",
+                 confidence="high",
+                 verification_status="confirmed-auth-bypass",
+                 safe_check=False,
+                 destructive=False,
+                 evidence={"policy": pol, "mode": mod, "test": "wrong-uri-cert"})
         elif "badcertificateuriinvalid" in result_str:
             good(f"Wrong URI certificate rejected ({result})")
         elif "badcertificateuntrusted" in result_str:

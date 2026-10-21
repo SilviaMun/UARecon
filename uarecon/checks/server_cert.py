@@ -2,7 +2,7 @@ import datetime
 
 from asyncua.sync import Client
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import bad, warn, good, info, section, tag
 from ..helpers import safe_disconnect
 
@@ -42,36 +42,25 @@ def check_server_certificate(target, report_data, timeout=5):
 
             if subject == issuer:
                 info("Server certificate is self-signed (common in OPC UA deployments)")
-                add_observation(
-                    report_data,
-                    "Self-Signed Server Certificate",
-                    "Cryptographic Failures",
-                    f"Server uses a self-signed certificate ({subject}). "
-                    f"This is common in OPC UA and does not necessarily indicate a vulnerability.",
-                    check="server-cert",
-                    confidence="high",
-                    verification_status="confirmed-read",
-                    safe_check=True,
-                    destructive=False,
-                    evidence={"subject": subject, "issuer": issuer},
-                )
+                emit(report_data, "self-signed-cert",
+                     f"Server uses a self-signed certificate ({subject}). "
+                     f"This is common in OPC UA and does not necessarily indicate a vulnerability.",
+                     confidence="high",
+                     verification_status="confirmed-read",
+                     safe_check=True,
+                     destructive=False,
+                     evidence={"subject": subject, "issuer": issuer})
 
             if not_after < now:
                 bad(f"Server certificate EXPIRED on {not_after}")
                 tag("Cryptographic Failures")
-                add_finding(
-                    report_data,
-                    "Expired Server Certificate",
-                    "High",
-                    "Cryptographic Failures",
-                    f"Server certificate expired on {not_after}. Clients may skip validation to connect.",
-                    check="server-cert",
-                    confidence="high",
-                    verification_status="confirmed-read",
-                    safe_check=True,
-                    destructive=False,
-                    evidence={"not_after": str(not_after)},
-                )
+                emit(report_data, "expired-cert",
+                     f"Server certificate expired on {not_after}. Clients may skip validation to connect.",
+                     confidence="high",
+                     verification_status="confirmed-read",
+                     safe_check=True,
+                     destructive=False,
+                     evidence={"not_after": str(not_after)})
             else:
                 days_left = (not_after - now).days
                 if days_left < 30:
@@ -86,19 +75,13 @@ def check_server_certificate(target, report_data, timeout=5):
                 if key_size < 2048:
                     bad(f"WEAK RSA KEY: {key_size}-bit (minimum 2048 recommended)")
                     tag("Cryptographic Failures")
-                    add_finding(
-                        report_data,
-                        "Weak Server Certificate Key",
-                        "High",
-                        "Cryptographic Failures",
-                        f"Server certificate uses {key_size}-bit RSA. Keys < 2048 bits are weak by modern standards.",
-                        check="server-cert",
-                        confidence="high",
-                        verification_status="confirmed-read",
-                        safe_check=True,
-                        destructive=False,
-                        evidence={"rsa_key_bits": key_size},
-                    )
+                    emit(report_data, "weak-cert-key",
+                         f"Server certificate uses {key_size}-bit RSA. Keys < 2048 bits are weak by modern standards.",
+                         confidence="high",
+                         verification_status="confirmed-read",
+                         safe_check=True,
+                         destructive=False,
+                         evidence={"rsa_key_bits": key_size})
             elif isinstance(pub_key, ec.EllipticCurvePublicKey):
                 key_size = pub_key.key_size
                 info(f"Key: EC {key_size}-bit")

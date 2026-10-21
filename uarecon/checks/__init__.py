@@ -66,6 +66,7 @@ from .max_connections import check_max_connections
 # It requires external wordlists (--wordlist / --passlist) and is invoked
 # separately via CLI flags. It is re-exported for direct use.
 
+from ._base import add_observation, emit, was_emitted, build_finding, FINDINGS_CATALOG, FRAMEWORK_MAP
 from ..banner import info, section
 
 
@@ -123,11 +124,11 @@ FAMILY_ALIAS_REVERSE = {v: k for k, v in FAMILY_ALIASES.items()}
 # ---------------------------------------------------------------------------
 CHECK_CATALOG = [
     # --- Family 1: authentication_posture ---
-    ("anonymous",        "Anonymous Access",                 "Broken Authentication",     False, "target",    FAMILY_AUTHENTICATION),
+    ("anonymous",        "Anonymous Access",                 "Identification and Authentication Failures",     False, "target",    FAMILY_AUTHENTICATION),
     ("user-tokens",      "User Token Policies",              "Cryptographic Failures",    False, "endpoints", FAMILY_AUTHENTICATION),
-    ("default-creds",    "Default Credentials",              "Broken Authentication",     True,  "target",    FAMILY_AUTHENTICATION),
-    ("provided-creds",   "Provided Credentials Assessment",  "Broken Authentication",     False, "target",    FAMILY_AUTHENTICATION),
-    ("lockout",          "Account Lockout Detection",        "Broken Authentication",     True,  "target",    FAMILY_AUTHENTICATION),
+    ("default-creds",    "Default Credentials",              "Identification and Authentication Failures",     True,  "target",    FAMILY_AUTHENTICATION),
+    ("provided-creds",   "Provided Credentials Assessment",  "Identification and Authentication Failures",     False, "target",    FAMILY_AUTHENTICATION),
+    ("lockout",          "Account Lockout Detection",        "Identification and Authentication Failures",     True,  "target",    FAMILY_AUTHENTICATION),
 
     # --- Family 2: endpoint_security_posture ---
     ("security-policies","Security Policy Analysis",         "Cryptographic Failures",    False, "endpoints", FAMILY_ENDPOINT),
@@ -138,7 +139,7 @@ CHECK_CATALOG = [
     ("server-cert",      "Server Certificate Analysis",      "Cryptographic Failures",    False, "target",    FAMILY_CERTIFICATE),
     ("cert-hostname",    "Certificate Hostname Validation",  "Cryptographic Failures",    False, "target",    FAMILY_CERTIFICATE),
     ("app-uri",          "ApplicationUri Consistency",       "Cryptographic Failures",    False, "target",    FAMILY_CERTIFICATE),
-    ("gds-trust",        "GDS / Trust List Access",          "Broken Access Control",     False, "client",    FAMILY_CERTIFICATE),
+    ("gds-trust",        "GDS / Trust List Access",          "Information Disclosure",    False, "client",    FAMILY_CERTIFICATE),
     ("cert-bypass",      "Certificate Trust Bypass",         "Cryptographic Failures",    True,  "target",    FAMILY_CERTIFICATE),
 
     # --- Family 4: secure_channel_posture ---
@@ -148,7 +149,7 @@ CHECK_CATALOG = [
     ("session-limits",   "Session Limits",                   "Security Misconfiguration", False, "client",    FAMILY_CHANNEL),
 
     # --- Family 5: authorization_posture ---
-    ("browse-acl",       "Browse Access Control",            "Broken Access Control",     False, "client",    FAMILY_AUTHORIZATION),
+    ("browse-acl",       "Browse Access Control",            "Information Disclosure",    False, "client",    FAMILY_AUTHORIZATION),
     ("roles",            "Role / Permission Model",          "Information Disclosure",    False, "client",    FAMILY_AUTHORIZATION),
     ("history",          "History Read Access",              "Information Disclosure",    False, "client",    FAMILY_AUTHORIZATION),
     ("view-access",      "View-Based Access Control",        "Security Misconfiguration", False, "client",    FAMILY_AUTHORIZATION),
@@ -165,9 +166,9 @@ CHECK_CATALOG = [
     ("sensitive-data",   "Sensitive Data Exposure",          "Information Disclosure",    False, "client",    FAMILY_DISCLOSURE),
 
     # --- Family 7: audit_posture ---
-    ("audit",            "Audit Configuration",              "Security Misconfiguration", False, "client",    FAMILY_AUDIT),
-    ("timestamp",        "Timestamp Accuracy",               "Security Misconfiguration", False, "client",    FAMILY_AUDIT),
-    ("diagnostics-consistency", "Diagnostics Consistency",   "Security Misconfiguration", False, "client",    FAMILY_AUDIT),
+    ("audit",            "Audit Configuration",              "Security Logging and Monitoring Failures", False, "client",    FAMILY_AUDIT),
+    ("timestamp",        "Timestamp Accuracy",               "Security Logging and Monitoring Failures", False, "client",    FAMILY_AUDIT),
+    ("diagnostics-consistency", "Diagnostics Consistency",   "Security Logging and Monitoring Failures", False, "client",    FAMILY_AUDIT),
 
     # --- Family 8: availability_posture ---
     ("max-limits",       "Server Limits (DoS Surface)",      "Security Misconfiguration", False, "client",    FAMILY_AVAILABILITY),
@@ -353,6 +354,24 @@ def run_check_by_slug(slug, target, client, report_data, timeout=5):
 
     fn = dispatch.get(slug)
     if fn:
+        before = len(report_data.get("findings", []))
         fn()
+        after = len(report_data.get("findings", []))
+        if after == before and slug in FRAMEWORK_MAP:
+            cat_entry = next((c for c in CHECK_CATALOG if c[0] == slug), None)
+            check_name = cat_entry[1] if cat_entry else slug
+            cat = cat_entry[2] if cat_entry else "Security Misconfiguration"
+            add_observation(
+                report_data,
+                f"{check_name}: No Issues Found",
+                cat,
+                f"Check '{slug}' completed without findings. "
+                f"The assessed control appears correctly configured for the current session context.",
+                check=slug,
+                confidence="medium",
+                verification_status="confirmed-check",
+                safe_check=True,
+                destructive=False,
+            )
         return True
     return False

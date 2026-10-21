@@ -12,7 +12,7 @@ Notes on false positive avoidance:
 
 from asyncua import ua
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import bad, warn, good, info, section, tag
 from ..helpers import sc, sn
 
@@ -59,13 +59,11 @@ def check_gds_trust_list(client, report_data):
                         val = child.read_value()
                         if val is not None:
                             readable_values += 1
-                            # Check if this is an actual trust list (contains cert data)
                             if child_name == "TrustList" or "trust" in child_name.lower():
                                 trust_list_readable = True
                     except Exception:
                         pass
 
-            # Only flag if there's something actionable beyond standard browsability
             if method_names:
                 warn(
                     f"CERT MANAGEMENT METHODS VISIBLE: {label} "
@@ -94,40 +92,27 @@ def check_gds_trust_list(client, report_data):
             pass
 
     if groups_with_methods:
-        # Methods like UpdateCertificate, AddCertificate, RemoveCertificate
-        # being visible means the user could potentially modify the trust store
         method_list = []
         for g in groups_with_methods:
             method_list.extend(g["methods"])
-        add_observation(
-            report_data,
-            "Certificate Management Methods Visible",
-            "Information Disclosure",
-            f"Certificate management methods are visible to the current user: "
-            f"{', '.join(method_list[:8])}. Method visibility does not prove executability - "
-            f"use the method-access check (testing-only) to verify if methods are callable.",
-            check="gds-trust",
-            confidence="medium",
-            verification_status="surface-only",
-            safe_check=True,
-            destructive=False,
-            evidence=groups_with_methods,
-        )
+        emit(report_data, "cert-mgmt-methods",
+             f"Certificate management methods are visible to the current user: "
+             f"{', '.join(method_list[:8])}. Method visibility does not prove executability - "
+             f"use the method-access check (testing-only) to verify if methods are callable.",
+             confidence="medium",
+             verification_status="surface-only",
+             safe_check=True,
+             destructive=False,
+             evidence=groups_with_methods)
     elif groups_with_readable_data:
-        # Trust list data is readable but no methods visible
-        add_observation(
-            report_data,
-            "Certificate Trust Data Readable",
-            "Information Disclosure",
-            "Certificate group data is readable by the current user. "
-            "This may expose the server's trusted certificate list. "
-            "Access control should restrict trust list reads to administrators.",
-            check="gds-trust",
-            confidence="medium",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence=groups_with_readable_data,
-        )
+        emit(report_data, "cert-trust-data",
+             "Certificate group data is readable by the current user. "
+             "This may expose the server's trusted certificate list. "
+             "Access control should restrict trust list reads to administrators.",
+             confidence="medium",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence=groups_with_readable_data)
     else:
         good("Certificate trust lists not accessible (or GDS not implemented)")

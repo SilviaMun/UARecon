@@ -10,7 +10,7 @@ confirmed plaintext credential transmission. With a valid SecurityPolicyUri on t
 token, it may still be protected.
 """
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import bad, warn, good, info, section, tag
 
 
@@ -79,60 +79,42 @@ def check_user_token_policies(report_data):
     if confirmed_plaintext:
         bad("CONFIRMED plaintext username/password transport")
         tag("Cryptographic Failures")
-        add_finding(
-            report_data,
-            "Plaintext Password Transmission",
-            "Critical",
-            "Cryptographic Failures",
-            "At least one endpoint accepts UserName authentication over SecurityPolicy None "
-            "with no token-level SecurityPolicyUri. Credentials are transmitted in plaintext. "
-            "Credentials are transmitted in plaintext, violating token encryption requirements.",
-            check="user-tokens",
-            confidence="high",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={"confirmed_plaintext_endpoints": confirmed_plaintext},
-        )
+        emit(report_data, "plaintext-password",
+             "At least one endpoint accepts UserName authentication over SecurityPolicy None "
+             "with no token-level SecurityPolicyUri. Credentials are transmitted in plaintext. "
+             "Credentials are transmitted in plaintext, violating token encryption requirements.",
+             confidence="high",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={"confirmed_plaintext_endpoints": confirmed_plaintext})
     elif possible_plaintext:
         warn("Potential plaintext username/password transport (unrecognized token policy)")
         tag("Cryptographic Failures")
-        add_finding(
-            report_data,
-            "Potential Plaintext Password Transmission",
-            "High",
-            "Cryptographic Failures",
-            "At least one endpoint accepts UserName authentication over SecurityPolicy None. "
-            "The token-level SecurityPolicyUri could not be confirmed as providing encryption. "
-            "Manual verification is recommended.",
-            check="user-tokens",
-            confidence="medium",
-            verification_status="endpoint-analysis",
-            safe_check=True,
-            destructive=False,
-            evidence={"possible_plaintext_endpoints": possible_plaintext},
-        )
+        emit(report_data, "potential-plaintext",
+             "At least one endpoint accepts UserName authentication over SecurityPolicy None. "
+             "The token-level SecurityPolicyUri could not be confirmed as providing encryption. "
+             "Manual verification is recommended.",
+             confidence="medium",
+             verification_status="endpoint-analysis",
+             safe_check=True,
+             destructive=False,
+             evidence={"possible_plaintext_endpoints": possible_plaintext})
     else:
         good("No plaintext password transport detected")
 
     if issued_token_unprotected:
         warn("IssuedToken (SAML/JWT) available on unencrypted endpoint without token-level protection")
         tag("Cryptographic Failures")
-        add_finding(
-            report_data,
-            "IssuedToken Over Unencrypted Endpoint",
-            "High",
-            "Cryptographic Failures",
-            "At least one endpoint accepts IssuedToken (SAML/JWT/Kerberos) over SecurityPolicy None "
-            "without token-level SecurityPolicyUri. Bearer tokens transmitted without any encryption "
-            "can be intercepted and replayed.",
-            check="user-tokens",
-            confidence="high",
-            verification_status="endpoint-analysis",
-            safe_check=True,
-            destructive=False,
-            evidence={"affected_endpoints": issued_token_unprotected},
-        )
+        emit(report_data, "issued-token-unencrypted",
+             "At least one endpoint accepts IssuedToken (SAML/JWT/Kerberos) over SecurityPolicy None "
+             "without token-level SecurityPolicyUri. Bearer tokens transmitted without any encryption "
+             "can be intercepted and replayed.",
+             confidence="high",
+             verification_status="endpoint-analysis",
+             safe_check=True,
+             destructive=False,
+             evidence={"affected_endpoints": issued_token_unprotected})
 
     # --- Additional check: Certificate tokens without encryption ---
     cert_token_unprotected = []
@@ -163,17 +145,12 @@ def check_user_token_policies(report_data):
 
     if cert_token_unprotected:
         warn("X509 certificate token offered on unencrypted endpoint")
-        add_observation(
-            report_data,
-            "Certificate Token on Unencrypted Endpoint",
-            "Cryptographic Failures",
-            "X509 certificate authentication is offered on an endpoint with SecurityPolicy None. "
-            "While the certificate itself is not a secret, the authentication exchange without "
-            "encryption allows an attacker to observe which certificate identities are used.",
-            check="user-tokens",
-            confidence="medium",
-            verification_status="endpoint-analysis",
-            safe_check=True,
-            destructive=False,
-            evidence={"affected_endpoints": cert_token_unprotected},
-        )
+        emit(report_data, "cert-token-unencrypted",
+             "X509 certificate authentication is offered on an endpoint with SecurityPolicy None. "
+             "While the certificate itself is not a secret, the authentication exchange without "
+             "encryption allows an attacker to observe which certificate identities are used.",
+             confidence="medium",
+             verification_status="endpoint-analysis",
+             safe_check=True,
+             destructive=False,
+             evidence={"affected_endpoints": cert_token_unprotected})

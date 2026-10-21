@@ -29,7 +29,7 @@ a risk-classified inventory of all writable nodes the user could affect.
 
 from asyncua import ua
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import bad, warn, good, info, section, tag
 
 
@@ -205,80 +205,62 @@ def check_node_write_access(client, report_data):
                 f"{len(infra_nodes)} infrastructure node(s) also writable")
         extra = ". " + ". ".join(extra_parts) if extra_parts else ""
 
-        add_finding(
-            report_data,
-            "Confirmed Write Access",
-            "High",
-            "Broken Access Control",
-            f"Write access confirmed on {len(confirmed_writable)} node(s) via "
-            f"same-value writeback on inert metadata nodes: "
-            f"{', '.join(confirmed_writable[:5])}. "
-            f"This proves the current user role has active write capability"
-            f"{extra}.",
-            check="node-write",
-            confidence="high",
-            verification_status="confirmed-write",
-            safe_check=True,
-            destructive=False,
-            evidence={
-                "confirmed_writable": confirmed_writable[:20],
-                "safety_critical_count": len(safety_critical),
-                "safety_critical_paths": [
-                    e["path"] or e["node_id"] for e in safety_critical[:20]
-                ],
-                "infra_count": len(infra_nodes),
-                "other_writable_count": len(other_writable),
-                "tested": tested,
-                "denied": len(denied_at_runtime),
-            },
-        )
+        emit(report_data, "confirmed-write-access",
+             f"Write access confirmed on {len(confirmed_writable)} node(s) via "
+             f"same-value writeback on inert metadata nodes: "
+             f"{', '.join(confirmed_writable[:5])}. "
+             f"This proves the current user role has active write capability"
+             f"{extra}.",
+             confidence="high",
+             verification_status="confirmed-write",
+             safe_check=True,
+             destructive=False,
+             evidence={
+                 "confirmed_writable": confirmed_writable[:20],
+                 "safety_critical_count": len(safety_critical),
+                 "safety_critical_paths": [
+                     e["path"] or e["node_id"] for e in safety_critical[:20]
+                 ],
+                 "infra_count": len(infra_nodes),
+                 "other_writable_count": len(other_writable),
+                 "tested": tested,
+                 "denied": len(denied_at_runtime),
+             })
 
     # Finding 2: safety-critical nodes writable but not write-tested
     if safety_critical and not confirmed_writable:
         paths = [e["path"] or e["node_id"] for e in safety_critical]
-        add_finding(
-            report_data,
-            "Write Access to Safety-Critical Nodes (Unverified)",
-            "High",
-            "Broken Access Control",
-            f"{len(safety_critical)} safety-critical node(s) report writable "
-            f"UserAccessLevel: {', '.join(paths[:5])}. These include control "
-            f"commands, interlocks, or actuator outputs. Write was NOT attempted "
-            f"to avoid operational impact. No inert metadata nodes were available "
-            f"to verify write capability independently.",
-            check="node-write",
-            confidence="medium",
-            verification_status="access-level-read",
-            safe_check=True,
-            destructive=False,
-            evidence={
-                "safety_critical_writable": paths[:20],
-                "total_writable": len(writable_nodes),
-            },
-        )
+        emit(report_data, "safety-critical-writable",
+             f"{len(safety_critical)} safety-critical node(s) report writable "
+             f"UserAccessLevel: {', '.join(paths[:5])}. These include control "
+             f"commands, interlocks, or actuator outputs. Write was NOT attempted "
+             f"to avoid operational impact. No inert metadata nodes were available "
+             f"to verify write capability independently.",
+             confidence="medium",
+             verification_status="access-level-read",
+             safe_check=True,
+             destructive=False,
+             evidence={
+                 "safety_critical_writable": paths[:20],
+                 "total_writable": len(writable_nodes),
+             })
 
     # Finding 3: only generic writable nodes, no safety-critical, no confirmed
     if other_writable and not confirmed_writable and not safety_critical and not infra_nodes:
         paths = [e["path"] or e["node_id"] for e in other_writable]
-        add_finding(
-            report_data,
-            "Writable Nodes Detected (Unverified)",
-            "Medium",
-            "Broken Access Control",
-            f"{len(other_writable)} node(s) report writable UserAccessLevel: "
-            f"{', '.join(paths[:5])}. No safe candidates were available for "
-            f"write verification. Review whether write access is appropriate "
-            f"for this user role.",
-            check="node-write",
-            confidence="medium",
-            verification_status="access-level-read",
-            safe_check=True,
-            destructive=False,
-            evidence={
-                "writable_paths": paths[:20],
-                "total_writable": len(writable_nodes),
-            },
-        )
+        emit(report_data, "writable-nodes-unverified",
+             f"{len(other_writable)} node(s) report writable UserAccessLevel: "
+             f"{', '.join(paths[:5])}. No safe candidates were available for "
+             f"write verification. Review whether write access is appropriate "
+             f"for this user role.",
+             confidence="medium",
+             verification_status="access-level-read",
+             safe_check=True,
+             destructive=False,
+             evidence={
+                 "writable_paths": paths[:20],
+                 "total_writable": len(writable_nodes),
+             })
 
     # Good: all safe candidates denied at runtime
     if tested > 0 and not confirmed_writable and denied_at_runtime:

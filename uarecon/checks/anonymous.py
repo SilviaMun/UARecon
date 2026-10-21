@@ -1,6 +1,6 @@
 from asyncua.sync import Client
 
-from ._base import add_finding
+from ._base import emit
 from ..banner import critical, bad, warn, good, info, section, tag
 from ..helpers import safe_disconnect, classify_error
 
@@ -37,40 +37,25 @@ def check_anonymous_access(target, report_data, timeout=5):
 
         if can_browse or can_read:
             critical("ANONYMOUS ACCESS CONFIRMED WITH REAL PRIVILEGES")
-            tag("Broken Authentication")
-            add_finding(
-                report_data,
-                "Anonymous Access Allowed",
-                "Critical",
-                "Broken Authentication",
-                "Server accepted anonymous access and allowed browse/read operations. "
-                "Any network-reachable attacker can access the OPC UA server without credentials.",
-                check="anonymous",
-                confidence="high",
-                verification_status="confirmed-read",
-                safe_check=True,
-                destructive=False,
-            )
+            tag("Identification and Authentication Failures")
+            emit(report_data, "anon-access",
+                 "Server accepted anonymous access and allowed browse/read operations. "
+                 "Any network-reachable attacker can access the OPC UA server without credentials.",
+                 confidence="high",
+                 verification_status="confirmed-read",
+                 safe_check=True,
+                 destructive=False)
         else:
-            # Session accepted but no actual data access - this is common and expected
-            # in OPC UA. Servers accept anonymous sessions for GetEndpoints/FindServers
-            # but deny all data operations. This is NOT a vulnerability by itself.
             info("Anonymous session accepted but no data operations permitted (expected for discovery)")
-            from ._base import add_observation
-            add_observation(
-                report_data,
-                "Anonymous Session Accepted (No Data Access)",
-                "Broken Authentication",
-                "Server accepted an anonymous session but no browse or read operations succeeded. "
-                "In OPC UA, anonymous sessions are often required for initial endpoint discovery "
-                "(GetEndpoints, FindServers). This is standard protocol behavior and not a "
-                "vulnerability unless data operations are also permitted.",
-                check="anonymous",
-                confidence="low",
-                verification_status="session-only",
-                safe_check=True,
-                destructive=False,
-            )
+            emit(report_data, "anon-session-only",
+                 "Server accepted an anonymous session but no browse or read operations succeeded. "
+                 "In OPC UA, anonymous sessions are often required for initial endpoint discovery "
+                 "(GetEndpoints, FindServers). This is standard protocol behavior and not a "
+                 "vulnerability unless data operations are also permitted.",
+                 confidence="low",
+                 verification_status="session-only",
+                 safe_check=True,
+                 destructive=False)
 
         safe_disconnect(client)
         return True

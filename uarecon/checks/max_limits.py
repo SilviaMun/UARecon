@@ -1,4 +1,4 @@
-from ._base import add_observation
+from ._base import emit
 from ..banner import warn, good, info, section
 
 
@@ -43,18 +43,13 @@ def check_max_limits(client, report_data):
             pass
 
     if suspicious:
-        add_observation(
-            report_data,
-            "Potentially Unrestricted Message Size Limits",
-            "Security Misconfiguration",
-            f"Server reports unlimited or unusually large limits for: {', '.join(suspicious)}. "
-            f"This may increase DoS surface, but impact depends on implementation-specific enforcement.",
-            check="max-limits",
-            confidence="low",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={"suspicious_limits": suspicious},
-        )
+        emit(report_data, "unrestricted-size-limits",
+             f"Server reports unlimited or unusually large limits for: {', '.join(suspicious)}. "
+             f"This may increase DoS surface, but impact depends on implementation-specific enforcement.",
+             confidence="low",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={"suspicious_limits": suspicious})
     else:
         good("Server size limits appear reasonable")

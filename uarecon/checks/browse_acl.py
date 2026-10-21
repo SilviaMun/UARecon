@@ -1,6 +1,6 @@
 from asyncua import ua
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import bad, warn, good, section, tag
 from ..helpers import sc, sn
 
@@ -125,38 +125,27 @@ def check_browse_access_control(client, report_data):
             tag("Information Disclosure")
 
     if session_diag_exposed:
-        add_finding(
-            report_data,
-            "Session Diagnostics Exposed",
-            "Medium",
-            "Information Disclosure",
-            f"Current user can browse {session_diag_count} session diagnostic entries, including other clients. "
-            f"This may expose client identities, connection times, endpoint usage, and operational metadata.",
-            check="browse-acl",
-            confidence="high",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={
-                "session_entry_count": session_diag_count,
-                "samples": session_diag_samples,
-            },
-        )
+        emit(report_data, "session-diag-exposed",
+             f"Current user can browse {session_diag_count} session diagnostic entries, including other clients. "
+             f"This may expose client identities, connection times, endpoint usage, and operational metadata.",
+             confidence="high",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={
+                 "session_entry_count": session_diag_count,
+                 "samples": session_diag_samples,
+             })
 
     if admin_evidence:
-        add_observation(
-            report_data,
-            "Administrative Security Surface Exposed",
-            "Information Disclosure",
-            "Administrative or security-relevant objects are browsable by the current user. "
-            "This is based on read-only enumeration only and does not prove write access or dangerous method execution.",
-            check="browse-acl",
-            confidence="medium",
-            verification_status="surface-only",
-            safe_check=True,
-            destructive=False,
-            evidence=admin_evidence,
-        )
+        emit(report_data, "admin-surface-exposed",
+             "Administrative or security-relevant objects are browsable by the current user. "
+             "This is based on read-only enumeration only and does not prove write access or dangerous method execution.",
+             confidence="medium",
+             verification_status="surface-only",
+             safe_check=True,
+             destructive=False,
+             evidence=admin_evidence)
 
     if not session_diag_exposed and not admin_evidence:
         good("Sensitive server areas not accessible to current user")

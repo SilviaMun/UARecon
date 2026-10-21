@@ -40,9 +40,9 @@ def parse_args():
     p.add_argument("-t", "--target", help="OPC-UA target")
     p.add_argument("-u", "--user", help="Username")
     p.add_argument("-p", "--password", help="Password")
-    p.add_argument("-c", "--cert", help="Client certificate PEM")
-    p.add_argument("-k", "--key", help="Client private key PEM")
-    p.add_argument("--uri", default="urn:UARecon", help="Application URI")
+    p.add_argument("-c", "--cert", help="Client certificate (PEM or DER)")
+    p.add_argument("-k", "--key", help="Client private key (PEM)")
+    p.add_argument("--uri", default="urn:UARecon", help="Application URI (auto-detected from cert when -c is used)")
     p.add_argument(
         "--policy",
         default="Basic256Sha256",
@@ -198,6 +198,7 @@ def main():
                     args.target, args.user, args.password,
                     args.cert, args.key, args.uri,
                     args.policy, args.mode, args.timeout,
+                    report_data=report_data,
                 )
                 report_data["findings"].extend(conn_findings)
                 if conn_ctx:
@@ -291,6 +292,7 @@ def main():
             args.policy,
             args.mode,
             args.timeout,
+            report_data=report_data,
         )
 
         report_data["findings"].extend(conn_findings)

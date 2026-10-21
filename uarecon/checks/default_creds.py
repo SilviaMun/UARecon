@@ -11,7 +11,7 @@ safely below that boundary.
 
 from asyncua.sync import Client
 
-from ._base import add_finding
+from ._base import emit
 from ..banner import critical, good, info, section, tag
 from ..helpers import safe_disconnect
 
@@ -55,7 +55,7 @@ def check_default_credentials(target, report_data, timeout=5):
             client.connect()
             display = f"{user}:{pwd}" if pwd else f"{user}:(empty)"
             critical(f"DEFAULT CREDENTIALS ACCEPTED: {display}")
-            tag("Broken Authentication")
+            tag("Identification and Authentication Failures")
             found.append(display)
             safe_disconnect(client)
             # On success, skip remaining passwords for this user
@@ -66,20 +66,14 @@ def check_default_credentials(target, report_data, timeout=5):
     tested = sum(attempts_by_user.values())
 
     if found:
-        add_finding(
-            report_data,
-            "Default Credentials Accepted",
-            "Critical",
-            "Broken Authentication",
-            f"Server accepted default credentials: {', '.join(found)}. "
-            f"Attacker can authenticate without knowing valid credentials.",
-            check="default-creds",
-            confidence="high",
-            verification_status="confirmed-auth",
-            safe_check=False,
-            destructive=False,
-            evidence={"accepted_credentials": found, "tested": tested},
-        )
+        emit(report_data, "default-creds-accepted",
+             f"Server accepted default credentials: {', '.join(found)}. "
+             f"Attacker can authenticate without knowing valid credentials.",
+             confidence="high",
+             verification_status="confirmed-auth",
+             safe_check=False,
+             destructive=False,
+             evidence={"accepted_credentials": found, "tested": tested})
     else:
         good(f"None of {tested} default credential attempts accepted "
              f"(max {_MAX_PER_USER} per user to avoid lockout)")

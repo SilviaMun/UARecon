@@ -12,7 +12,7 @@ has zero operational impact.  Real user accounts are never touched.
 
 from asyncua.sync import Client
 
-from ._base import add_observation
+from ._base import emit
 from ..banner import warn, good, info, section
 from ..helpers import safe_disconnect, classify_error
 
@@ -72,25 +72,20 @@ def check_account_lockout(target, report_data, timeout=5):
     elif observed_failed >= _MAX_ATTEMPTS:
         warn(f"No lockout observed after {_MAX_ATTEMPTS} failed attempts "
              f"(synthetic user '{_PROBE_USER}')")
-        add_observation(
-            report_data,
-            "No Visible Account Lockout Observed",
-            "Broken Authentication",
-            f"Server returned authentication failures for {_MAX_ATTEMPTS} consecutive "
-            f"invalid login attempts on synthetic user '{_PROBE_USER}' without visible "
-            f"lockout or error change. This does not exclude server-side throttling, "
-            f"upstream controls, or delayed lockout mechanisms.",
-            check="lockout",
-            confidence="low",
-            verification_status="inconclusive-no-lockout-observed",
-            safe_check=False,
-            destructive=False,
-            evidence={
-                "attempts": _MAX_ATTEMPTS,
-                "probe_user": _PROBE_USER,
-                "last_error": last_error,
-            },
-        )
+        emit(report_data, "no-lockout",
+             f"Server returned authentication failures for {_MAX_ATTEMPTS} consecutive "
+             f"invalid login attempts on synthetic user '{_PROBE_USER}' without visible "
+             f"lockout or error change. This does not exclude server-side throttling, "
+             f"upstream controls, or delayed lockout mechanisms.",
+             confidence="low",
+             verification_status="inconclusive-no-lockout-observed",
+             safe_check=False,
+             destructive=False,
+             evidence={
+                 "attempts": _MAX_ATTEMPTS,
+                 "probe_user": _PROBE_USER,
+                 "last_error": last_error,
+             })
     elif observed_failed > 0 and observed_failed < _MAX_ATTEMPTS:
         good(f"Possible lockout/throttling detected after {observed_failed} failures "
              f"(error changed: {last_error})")

@@ -117,22 +117,31 @@ def vuln_recap(findings, target=None, report_data=None):
         print(f"  {BLUE}Client certificate:{RESET} {ctx.get('cert_type', '?')}")
         print(f"  {BLUE}User authentication:{RESET} {ctx.get('user_auth', '?')}")
 
-    # --- Actionable findings ---
+    # --- Actionable findings by IEC 62443 FR ---
     if phase_fn:
-        phase_fn("FINDINGS")
+        phase_fn("FINDINGS — IEC 62443 POSTURE")
 
     if not actionable:
         print(f"\n  {GREEN}No actionable findings.{RESET}")
     else:
-        by_cat = {}
+        by_fr = {}
         for f in actionable:
-            by_cat.setdefault(f["category"], []).append(f)
+            frs = f.get("iec62443", [])
+            if not frs:
+                frs = ["Uncategorized"]
+            for fr in frs:
+                by_fr.setdefault(fr, []).append(f)
 
-        for cat, items in sorted(by_cat.items()):
-            print(f"\n  {MAGENTA}{BOLD}{cat}{RESET}")
+        seen_titles = set()
+        for fr in sorted(by_fr.keys()):
+            items = by_fr[fr]
+            print(f"\n  {MAGENTA}{BOLD}{fr}{RESET}")
             for f in items:
-                sev = f.get("severity", "")
                 title = f.get("title", "")
+                if title in seen_titles:
+                    continue
+                seen_titles.add(title)
+                sev = f.get("severity", "")
                 if sev == "Critical":
                     print(f"    {RED}{BOLD}[{sev}]{RESET} {title}")
                 elif sev == "High":
@@ -145,16 +154,80 @@ def vuln_recap(findings, target=None, report_data=None):
                 if desc:
                     short = desc if len(desc) <= 120 else desc[:117] + "..."
                     print(f"      {short}")
+                opcua = f.get("opcua_security", [])
+                if opcua:
+                    print(f"      {CYAN}OPC UA: {', '.join(opcua)}{RESET}")
                 slug = f.get("check", "")
                 if slug and target:
                     print(f"      {CYAN}⟶ python3 uarecon.py -t {target} --check {slug}{RESET}")
 
     # --- Observations (muted) ---
     if observations:
-        print(f"\n  {BLUE}{BOLD}── OBSERVATIONS ({len(observations)}) ──{RESET}")
-        for f in observations:
-            title = f.get("title", "")
-            print(f"    {BLUE}[Info]{RESET} {title}")
+        confirmed = [f for f in observations if "No Issues Found" in f.get("title", "")]
+        other_obs = [f for f in observations if "No Issues Found" not in f.get("title", "")]
+
+        if other_obs:
+            print(f"\n  {BLUE}{BOLD}── OBSERVATIONS ({len(other_obs)}) ──{RESET}")
+            for f in other_obs:
+                title = f.get("title", "")
+                print(f"    {BLUE}[Info]{RESET} {title}")
+
+        if confirmed:
+            print(f"\n  {GREEN}{BOLD}── CONTROLS VERIFIED ({len(confirmed)}) ──{RESET}")
+            for f in confirmed:
+                title = f.get("title", "").replace(": No Issues Found", "")
+                print(f"    {GREEN}[OK]{RESET} {title}")
+
+    # --- FR posture summary ---
+    fr_labels = [
+        "FR1 – Identification & Authentication",
+        "FR2 – Use Control",
+        "FR3 – System Integrity",
+        "FR4 – Data Confidentiality",
+        "FR5 – Restricted Data Flow",
+        "FR6 – Timely Response to Events",
+        "FR7 – Resource Availability",
+    ]
+
+    all_with_fr = actionable + observations
+    if phase_fn:
+        phase_fn("IEC 62443 POSTURE SUMMARY")
+    for fr in fr_labels:
+        fr_findings = [f for f in all_with_fr if fr in f.get("iec62443", [])]
+        fr_actionable = [f for f in fr_findings if not f.get("observation")]
+        fr_confirmed = [f for f in fr_findings
+                        if f.get("observation") and "No Issues Found" in f.get("title", "")]
+        fr_obs = [f for f in fr_findings
+                  if f.get("observation") and "No Issues Found" not in f.get("title", "")]
+
+        if not fr_findings:
+            print(f"  {BLUE}[—]{RESET} {fr}: not assessed")
+            continue
+
+        worst = "OK"
+        color = GREEN
+        for f in fr_actionable:
+            s = f.get("severity", "")
+            if s == "Critical":
+                worst, color = "CRITICAL", RED
+                break
+            elif s == "High" and worst not in ("CRITICAL",):
+                worst, color = "HIGH", RED
+            elif s == "Medium" and worst in ("OK", "LOW"):
+                worst, color = "MEDIUM", YELLOW
+            elif s == "Low" and worst == "OK":
+                worst, color = "LOW", BLUE
+
+        parts = []
+        if fr_actionable:
+            parts.append(f"{len(fr_actionable)} finding(s)")
+        if fr_obs:
+            parts.append(f"{len(fr_obs)} obs")
+        if fr_confirmed:
+            parts.append(f"{len(fr_confirmed)} verified")
+        detail = " | ".join(parts) if parts else "no data"
+
+        print(f"  {color}[{worst}]{RESET} {fr}: {detail}")
 
     # --- Totals ---
     crits = sum(1 for f in actionable if f.get("severity") == "Critical")

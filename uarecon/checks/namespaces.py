@@ -1,6 +1,6 @@
 import re
 
-from ._base import add_finding
+from ._base import emit
 from ..banner import bad, good, info, section, tag
 
 
@@ -45,19 +45,13 @@ def check_namespace_exposure(client, report_data):
         if sensitive:
             bad(f"Namespace URIs reveal internal info: {', '.join(sensitive)}")
             tag("Information Disclosure")
-            add_finding(
-                report_data,
-                "Namespace URIs Expose Internal Structure",
-                "Medium",
-                "Information Disclosure",
-                f"Vendor namespace URIs contain internal hostnames or network info: {', '.join(sensitive)}. "
-                f"This may reveal infrastructure details.",
-                check="namespaces",
-                confidence="medium",
-                verification_status="pattern-match",
-                safe_check=True,
-                destructive=False,
-                evidence={"sensitive_namespaces": sensitive},
-            )
+            emit(report_data, "namespace-internal-info",
+                 f"Vendor namespace URIs contain internal hostnames or network info: {', '.join(sensitive)}. "
+                 f"This may reveal infrastructure details.",
+                 confidence="medium",
+                 verification_status="pattern-match",
+                 safe_check=True,
+                 destructive=False,
+                 evidence={"sensitive_namespaces": sensitive})
     except Exception:
         info("Could not read namespace array")

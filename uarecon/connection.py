@@ -1,11 +1,13 @@
 from asyncua.sync import Client
 from .banner import critical, info, good, bad, warn, tag
+from .checks._base import build_finding
 from .helpers import (
     uniq,
     classify_error,
     safe_disconnect,
     generate_self_signed_cert,
     cleanup_temp_artifacts,
+    extract_uri_from_cert,
 )
 
 
@@ -53,9 +55,29 @@ def get_endpoint_combinations(target, timeout=5):
     return uniq(combos)
 
 
+def _build_combos(target, policy, mode, timeout):
+    endpoint_combos = get_endpoint_combinations(target, timeout=timeout)
+    preferred = [(p, m) for (p, m) in endpoint_combos if p != "None" and m != "None"]
+
+    if preferred:
+        info(f"Server advertises {len(preferred)} security combo(s)")
+        return preferred
+
+    policies = uniq([policy, "Basic256Sha256", "Aes128Sha256RsaOaep", "Aes256Sha256RsaPss"])
+    modes = uniq([mode, "Sign", "SignAndEncrypt"])
+    return [(p, m) for p in policies for m in modes]
+
+
 def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
-                policy="Basic256Sha256", mode="Sign", timeout=5):
+                policy="Basic256Sha256", mode="Sign", timeout=5,
+                report_data=None):
     findings = []
+
+    if cert and uri == "urn:UARecon":
+        extracted = extract_uri_from_cert(cert)
+        if extracted:
+            info(f"Auto-detected URI from certificate: {extracted}")
+            uri = extracted
 
     def build_client():
         c = Client(target, timeout=timeout)
@@ -64,25 +86,35 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
         c.set_password(pwd)
         return c
 
-    # Strategy 1: provided cert
+    # --- Provided certificate: use it exclusively, no fallback ---
     if cert and key:
-        client = build_client()
         info(f"Using provided certificate: {cert}")
-        try:
-            client.set_security_string(f"{policy},{mode},{cert},{key}")
-            client.connect()
-            good(f"Connected with provided certificate ({policy}/{mode})")
-            return client, findings, {
-                "strategy": "provided-certificate",
-                "policy": policy, "mode": mode,
-                "user_auth": "username-password",
-                "cert_type": "provided",
-            }
-        except Exception as e:
-            warn(f"Provided cert failed: {classify_error(e)}")
-            safe_disconnect(client)
+        combos = _build_combos(target, policy, mode, timeout)
 
-    # Strategy 2: no security
+        last_errors = []
+        for pol, mod in combos:
+            client = build_client()
+            try:
+                client.set_security_string(f"{pol},{mod},{cert},{key}")
+                client.connect()
+                good(f"Connected with provided certificate ({pol}/{mod})")
+                return client, findings, {
+                    "strategy": "provided-certificate",
+                    "policy": pol, "mode": mod,
+                    "user_auth": "username-password",
+                    "cert_type": "provided",
+                }
+            except Exception as e:
+                err = classify_error(e)
+                last_errors.append(f"{pol}/{mod}: {err}")
+                warn(f"Provided cert {pol}/{mod} failed: {err}")
+                safe_disconnect(client)
+
+        bad("All combinations failed with provided certificate")
+        return None, findings, None
+
+    # --- No certificate provided: try no-security, then auto-generate ---
+
     info("Trying connection without security policy...")
     client = Client(target, timeout=timeout)
     client.set_user(user)
@@ -91,22 +123,17 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
         client.connect()
         critical("CONNECTED WITHOUT SECURITY POLICY (SecurityPolicy None)")
         tag("Cryptographic Failures")
-        findings.append({
-            "title": "SecurityPolicy None Accepted",
-            "severity": "Critical",
-            "category": "Cryptographic Failures",
-            "description": "Server accepts connections without any security policy. All traffic is unencrypted and unauthenticated.",
-            "check": "security-policies",
-            "confidence": "high",
-            "verification_status": "confirmed-connect",
-            "safe_check": True,
-            "destructive": False,
-            "observation": False,
-            "evidence": {
-                "policy": "None",
-                "mode": "None",
-            },
-        })
+        findings.append(build_finding(
+            "conn-policy-none",
+            "Server accepts connections without any security policy. "
+            "All traffic is unencrypted and unauthenticated.",
+            report_data=report_data,
+            confidence="high",
+            verification_status="confirmed-connect",
+            safe_check=True,
+            destructive=False,
+            evidence={"policy": "None", "mode": "None"},
+        ))
         return client, findings, {
             "strategy": "no-security",
             "policy": "None", "mode": "None",
@@ -117,24 +144,13 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
         good(f"SecurityPolicy None rejected ({classify_error(e)})")
         safe_disconnect(client)
 
-    # Strategy 3: auto-generated self-signed cert
     info("Auto-generating self-signed certificate...")
     auto_cert, auto_key, cnf_path, out_dir, created_tmp = generate_self_signed_cert(uri)
     if not auto_cert:
         bad("Failed to generate certificate (is openssl installed?)")
         return None, findings, None
 
-    endpoint_combos = get_endpoint_combinations(target, timeout=timeout)
-    preferred = [(p, m) for (p, m) in endpoint_combos if p != "None" and m != "None"]
-
-    if preferred:
-        combos = preferred
-        info(f"Using {len(preferred)} security combo(s) advertised by server")
-    else:
-        policies = uniq([policy, "Basic256Sha256", "Aes128Sha256RsaOaep", "Aes256Sha256RsaPss"])
-        modes = uniq([mode, "Sign", "SignAndEncrypt"])
-        combos = [(p, m) for p in policies for m in modes]
-
+    combos = _build_combos(target, policy, mode, timeout)
     last_errors = []
 
     for pol, mod in combos:
@@ -143,25 +159,19 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
             client.set_security_string(f"{pol},{mod},{auto_cert},{auto_key}")
             client.connect()
             warn(f"Connected using auto-generated self-signed cert ({pol}/{mod})")
-            findings.append({
-                "title": "Auto-Generated Client Certificate Accepted During Enumeration",
-                "severity": "Info",
-                "category": "Cryptographic Failures",
-                "description": f"Server accepted a session using an auto-generated self-signed client certificate ({pol}/{mod}). "
-                               f"This may indicate permissive client certificate trust handling, trust-on-first-use behavior, "
-                               f"or reliance on additional authentication factors. Manual verification is required to determine "
-                               f"whether certificate trust validation is fully enforced.",
-                "check": "cert-bypass",
-                "confidence": "low",
-                "verification_status": "inconclusive",
-                "safe_check": True,
-                "destructive": False,
-                "observation": True,
-                "evidence": {
-                    "policy": pol,
-                    "mode": mod,
-                },
-            })
+            findings.append(build_finding(
+                "conn-auto-cert",
+                f"Server accepted a session using an auto-generated self-signed client certificate ({pol}/{mod}). "
+                f"This may indicate permissive client certificate trust handling, trust-on-first-use behavior, "
+                f"or reliance on additional authentication factors. Manual verification is required to determine "
+                f"whether certificate trust validation is fully enforced.",
+                report_data=report_data,
+                confidence="low",
+                verification_status="inconclusive",
+                safe_check=True,
+                destructive=False,
+                evidence={"policy": pol, "mode": mod},
+            ))
             cleanup_temp_artifacts(auto_cert, auto_key, cnf_path, out_dir, remove_dir=created_tmp)
             return client, findings, {
                 "strategy": "auto-generated-certificate",
@@ -175,24 +185,17 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
 
             if err == "badcertificateuntrusted":
                 good(f"Self-signed cert rejected by {pol}/{mod} (trust validation enabled)")
-                findings.append({
-                    "title": "Untrusted Client Certificate Rejected",
-                    "severity": "Info",
-                    "category": "Cryptographic Failures",
-                    "description": f"Server rejected an untrusted self-signed certificate on {pol}/{mod}. "
-                                   f"This suggests certificate trust validation is enabled.",
-                    "check": "cert-bypass",
-                    "confidence": "high",
-                    "verification_status": "confirmed-reject",
-                    "safe_check": True,
-                    "destructive": False,
-                    "observation": True,
-                    "evidence": {
-                        "policy": pol,
-                        "mode": mod,
-                        "error": err,
-                    },
-                })
+                findings.append(build_finding(
+                    "conn-cert-rejected",
+                    f"Server rejected an untrusted self-signed certificate on {pol}/{mod}. "
+                    f"This suggests certificate trust validation is enabled.",
+                    report_data=report_data,
+                    confidence="high",
+                    verification_status="confirmed-reject",
+                    safe_check=True,
+                    destructive=False,
+                    evidence={"policy": pol, "mode": mod, "error": err},
+                ))
                 safe_disconnect(client)
                 cleanup_temp_artifacts(auto_cert, auto_key, cnf_path, out_dir, remove_dir=created_tmp)
                 return None, findings, None
@@ -203,21 +206,15 @@ def try_connect(target, user, pwd, cert=None, key=None, uri="urn:UARecon",
     cleanup_temp_artifacts(auto_cert, auto_key, cnf_path, out_dir, remove_dir=created_tmp)
 
     if last_errors:
-        findings.append({
-            "title": "Connection Failed",
-            "severity": "Info",
-            "category": "Connection",
-            "description": "All connection strategies failed.",
-            "details": last_errors[:10],
-            "check": "connection",
-            "confidence": "high",
-            "verification_status": "failed-all-strategies",
-            "safe_check": True,
-            "destructive": False,
-            "observation": True,
-            "evidence": {
-                "errors": last_errors[:10],
-            },
-        })
+        findings.append(build_finding(
+            "conn-failed",
+            "All connection strategies failed.",
+            report_data=report_data,
+            confidence="high",
+            verification_status="failed-all-strategies",
+            safe_check=True,
+            destructive=False,
+            evidence={"errors": last_errors[:10]},
+        ))
 
     return None, findings, None

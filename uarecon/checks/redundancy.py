@@ -11,7 +11,7 @@ Notes on false positive avoidance:
 
 import re
 
-from ._base import add_finding, add_observation
+from ._base import emit
 from ..banner import warn, good, info, section, tag
 
 
@@ -72,40 +72,27 @@ def check_redundancy_exposure(client, report_data):
         # Real finding: redundancy info leaks internal network addresses
         warn(f"Redundancy information reveals internal addresses: {', '.join(internal_leaks[:5])}")
         tag("Information Disclosure")
-        add_finding(
-            report_data,
-            "Redundancy Info Leaks Internal Addresses",
-            "Medium",
-            "Information Disclosure",
-            f"Server redundancy/cluster information reveals internal network addresses: "
-            f"{', '.join(internal_leaks[:5])}. This aids lateral movement planning in multi-server environments.",
-            check="redundancy",
-            confidence="high",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={
-                "internal_leaks": internal_leaks[:20],
-                "exposed_info": exposed_info,
-                "peer_count": peer_count,
-            },
-        )
+        emit(report_data, "redundancy-internal-leaks",
+             f"Server redundancy/cluster information reveals internal network addresses: "
+             f"{', '.join(internal_leaks[:5])}. This aids lateral movement planning in multi-server environments.",
+             confidence="high",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={
+                 "internal_leaks": internal_leaks[:20],
+                 "exposed_info": exposed_info,
+                 "peer_count": peer_count,
+             })
     elif exposed_info and peer_count > 0:
-        # Redundancy peers exist but no internal info leaked.
-        # This is normal OPC UA deployment - observation only.
-        add_observation(
-            report_data,
-            "Redundancy Topology Visible",
-            "Information Disclosure",
-            f"Server exposes redundancy/cluster information: {', '.join(exposed_info)}. "
-            f"This is standard OPC UA redundancy behavior. No internal addresses were identified. "
-            f"Review whether peer discovery URIs should be restricted in the deployment context.",
-            check="redundancy",
-            confidence="low",
-            verification_status="confirmed-read",
-            safe_check=True,
-            destructive=False,
-            evidence={"exposed_info": exposed_info, "peer_count": peer_count},
-        )
+        emit(report_data, "redundancy-topology-visible",
+             f"Server exposes redundancy/cluster information: {', '.join(exposed_info)}. "
+             f"This is standard OPC UA redundancy behavior. No internal addresses were identified. "
+             f"Review whether peer discovery URIs should be restricted in the deployment context.",
+             confidence="low",
+             verification_status="confirmed-read",
+             safe_check=True,
+             destructive=False,
+             evidence={"exposed_info": exposed_info, "peer_count": peer_count})
     else:
         good("No redundancy topology information exposed")

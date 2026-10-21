@@ -1,6 +1,6 @@
 import datetime
 
-from ._base import add_observation
+from ._base import emit
 from ..banner import warn, good, info, section, tag
 
 
@@ -19,21 +19,16 @@ def check_timestamp_accuracy(client, report_data):
             if drift > 300:
                 warn(f"Clock drift detected: {drift:.0f}s (>5 min)")
                 tag("Security Misconfiguration")
-                add_observation(
-                    report_data,
-                    "Time Desynchronization Observed",
-                    "Security Misconfiguration",
-                    f"Server clock differs from local time by {drift:.0f} seconds. "
-                    f"This may reflect NTP misconfiguration, timezone mismatch, or network latency. "
-                    f"Security relevance depends on whether the deployment relies on strict time-based "
-                    f"validation (e.g. certificate expiry, nonce freshness, audit log correlation).",
-                    check="timestamp",
-                    confidence="medium",
-                    verification_status="confirmed-read",
-                    safe_check=True,
-                    destructive=False,
-                    evidence={"drift_seconds": int(drift)},
-                )
+                emit(report_data, "time-desync",
+                     f"Server clock differs from local time by {drift:.0f} seconds. "
+                     f"This may reflect NTP misconfiguration, timezone mismatch, or network latency. "
+                     f"Security relevance depends on whether the deployment relies on strict time-based "
+                     f"validation (e.g. certificate expiry, nonce freshness, audit log correlation).",
+                     confidence="medium",
+                     verification_status="confirmed-read",
+                     safe_check=True,
+                     destructive=False,
+                     evidence={"drift_seconds": int(drift)})
             elif drift > 60:
                 warn(f"Clock drift: {drift:.0f}s (>1 min)")
             else:

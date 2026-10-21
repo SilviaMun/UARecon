@@ -1,6 +1,6 @@
 from asyncua import ua
 
-from ._base import add_observation
+from ._base import emit
 from ..banner import warn, good, info, section
 from ..helpers import sc, sn
 
@@ -60,19 +60,14 @@ def check_view_access_control(client, report_data):
 
         if has_role_findings:
             warn("No Views defined despite role-based access model detected")
-            add_observation(
-                report_data,
-                "No View-Based Namespace Segregation",
-                "Security Misconfiguration",
-                "Server defines roles but does not implement Views for namespace segregation. "
-                "All authenticated users may browse the same address space regardless of role. "
-                "Views provide a mechanism to restrict namespace visibility per role/context.",
-                check="view-access",
-                confidence="medium",
-                verification_status="confirmed-read",
-                safe_check=True,
-                destructive=False,
-                evidence={"views_count": 0, "has_roles": True},
-            )
+            emit(report_data, "no-view-segregation",
+                 "Server defines roles but does not implement Views for namespace segregation. "
+                 "All authenticated users may browse the same address space regardless of role. "
+                 "Views provide a mechanism to restrict namespace visibility per role/context.",
+                 confidence="medium",
+                 verification_status="confirmed-read",
+                 safe_check=True,
+                 destructive=False,
+                 evidence={"views_count": 0, "has_roles": True})
         else:
             info("No Views defined (all users browse full address space)")

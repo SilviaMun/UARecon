@@ -1,4 +1,4 @@
-from ._base import add_observation
+from ._base import emit
 from ..banner import warn, info, section
 
 
@@ -9,19 +9,14 @@ def check_session_limits(client, report_data):
         if max_sessions is not None:
             if max_sessions == 0:
                 warn("MaxSessionCount = 0 (unlimited or unspecified)")
-                add_observation(
-                    report_data,
-                    "Session Count Not Explicitly Limited",
-                    "Security Misconfiguration",
-                    "MaxSessionCount is 0 (unlimited or unspecified). This may increase DoS surface, "
-                    "but impact depends on implementation-specific controls.",
-                    check="session-limits",
-                    confidence="low",
-                    verification_status="confirmed-read",
-                    safe_check=True,
-                    destructive=False,
-                    evidence={"max_session_count": max_sessions},
-                )
+                emit(report_data, "session-count-unlimited",
+                     "MaxSessionCount is 0 (unlimited or unspecified). This may increase DoS surface, "
+                     "but impact depends on implementation-specific controls.",
+                     confidence="low",
+                     verification_status="confirmed-read",
+                     safe_check=True,
+                     destructive=False,
+                     evidence={"max_session_count": max_sessions})
             else:
                 info(f"MaxSessionCount: {max_sessions}")
     except Exception:
